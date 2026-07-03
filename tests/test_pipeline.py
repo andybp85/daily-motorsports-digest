@@ -1,6 +1,6 @@
 from digest.config import Config
 from digest.models import RawItem
-from digest.pipeline import rank
+from digest.pipeline import rank, score_pool
 
 
 class FakeState:
@@ -38,6 +38,13 @@ def test_rank_normalizes_clusters_scores_and_orders():
     assert len(scored) == 2
     assert scored[0].story.title.startswith("Verstappen")     # highest buzz first
     assert scored[0].breadth_raw >= 2                          # merged across domains
+
+
+def test_score_pool_returns_full_pregate_pool():
+    # score_pool does not gate, so it returns everything scored, sorted desc.
+    raw = [RawItem(source="rss", url="https://a/x", title="F1 news", series="f1")]
+    scored = score_pool(raw, {"f1": 1.0}, _cfg())
+    assert len(scored) == 1
 
 
 def test_rank_gate_suppresses_recently_sent():

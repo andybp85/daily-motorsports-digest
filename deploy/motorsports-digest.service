@@ -5,6 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
+User=pi
+Group=pi
 WorkingDirectory=/home/pi/daily-motorsports-digest
 EnvironmentFile=/home/pi/daily-motorsports-digest/.env
 ExecStart=/home/pi/daily-motorsports-digest/.venv/bin/python -m digest.main --config /home/pi/daily-motorsports-digest/config.toml

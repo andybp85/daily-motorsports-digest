@@ -40,6 +40,14 @@ def test_send_email_calls_ses_with_expected_args():
     assert kwargs["Message"]["Body"]["Html"]["Data"] == "<p>hi</p>"
 
 
+def test_render_html_drops_unsafe_link_scheme():
+    blurbs = [_blurb("Title", "Blurb text", 10, 2, ["a.com"])]
+    blurbs[0].scored.story.canonical_url = "javascript:alert(1)"
+    html = render_html(blurbs, date(2026, 7, 3))
+    assert "javascript:alert(1)" not in html
+    assert 'href="#"' in html
+
+
 def test_render_html_escapes_feed_content():
     blurbs = [_blurb('<script>alert(1)</script>', 'Tom & "Jerry" <b>win</b>', 100, 5, ["a.com"])]
     html = render_html(blurbs, date(2026, 7, 3))

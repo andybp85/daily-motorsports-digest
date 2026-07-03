@@ -22,7 +22,7 @@ def is_relevant(title: str, keywords: dict) -> bool:
     return has_driver and has_anchor
 
 
-def parse_articles(rows: list[dict], keywords: dict) -> list[RawItem]:
+def parse_articles(rows: list[dict], keywords: dict, series: str = "") -> list[RawItem]:
     """Convert GDELT article rows into relevant RawItems."""
     items = []
     for row in rows:
@@ -34,6 +34,7 @@ def parse_articles(rows: list[dict], keywords: dict) -> list[RawItem]:
             url=row.get("url", ""),
             title=title,
             domain=row.get("domain", ""),
+            series=series,
         ))
     return items
 
@@ -68,7 +69,7 @@ def fetch_gdelt(keywords: dict, since: datetime, end: datetime, client=None):
                            start_date=start_s, end_date=end_s, num_records=250)
             df = gd.article_search(filt)
             rows = df.to_dict("records") if df is not None and not df.empty else []
-            articles.extend(parse_articles(rows, keywords))
+            articles.extend(parse_articles(rows, keywords, series=kind))
 
             tl = gd.timeline_search("timelinevol", filt)
             vols = tl.iloc[:, -1].tolist() if tl is not None and not tl.empty else []

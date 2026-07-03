@@ -36,6 +36,12 @@ def test_parse_articles_filters_irrelevant():
     assert items[0].source == "gdelt"
 
 
+def test_parse_articles_tags_series():
+    rows = [{"url": "https://a.com/1", "title": "Verstappen wins the Grand Prix", "domain": "a.com"}]
+    items = parse_articles(rows, KEYWORDS, series="f1")
+    assert items[0].series == "f1"
+
+
 def test_spike_ratio_computes_last_over_mean():
     assert spike_ratio([10, 10, 10, 30]) == 3.0
     assert spike_ratio([]) == 1.0

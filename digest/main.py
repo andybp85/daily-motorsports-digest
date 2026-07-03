@@ -10,7 +10,8 @@ from digest.collect.reddit import fetch_reddit
 from digest.collect.rss import fetch_rss
 from digest.config import load_config
 from digest.email import render_html, render_subject, send_email
-from digest.pipeline import rank
+from digest.gate import filter_stories
+from digest.pipeline import score_pool
 from digest.state import StateStore
 from digest.summarize import summarize
 
@@ -39,18 +40,23 @@ def run(config_path: str | None, dry_run: bool) -> None:
     state = StateStore(cfg.db_path)
     try:
         raw, spikes = _collect(cfg, since, end)
-        scored = rank(raw, spikes, state, cfg)
-        top = scored[: cfg.max_stories]
+        scored = score_pool(raw, spikes, cfg)          # full pre-gate pool, sorted desc
+        survivors = filter_stories(
+            scored, state,
+            threshold=cfg.threshold, calibration=cfg.calibration,
+            suppress_days=cfg.suppress_days, escalation_factor=cfg.escalation_factor,
+        )
+        top = survivors[: cfg.max_stories]
 
-        if not top:
-            print(f"[digest] nothing cleared the gate (top buzz: "
-                  f"{scored[0].buzz:.3f} of {len(scored)})" if scored
-                  else "[digest] no stories at all — no email sent")
-            return
-
-        if cfg.calibration:
+        if cfg.calibration and scored:
             print("[calibration] day's scores: "
                   + ", ".join(f"{s.buzz:.3f}" for s in scored[:20]))
+
+        if not top:
+            print(f"[digest] nothing cleared the gate (top buzz {scored[0].buzz:.3f} "
+                  f"of {len(scored)} scored) — no email sent" if scored
+                  else "[digest] no stories at all — no email sent")
+            return
 
         if dry_run:
             print(f"[dry-run] {len(top)} stories would be sent:")

@@ -2,13 +2,16 @@ import html as html_lib
 
 from digest.models import Blurb
 
+_SAFE_SCHEMES = ("http://", "https://")
+
 
 def render_subject(date) -> str:
     return f"🏎️ Morning Buzz — {date:%a %b %-d, %Y}"
 
 
 def _story_link(blurb: Blurb) -> str:
-    return blurb.scored.story.canonical_url
+    url = blurb.scored.story.canonical_url
+    return url if url.startswith(_SAFE_SCHEMES) else "#"
 
 
 def render_html(blurbs: list[Blurb], date) -> str:

@@ -1,0 +1,10 @@
+[Unit]
+Description=F1/IndyCar morning buzz digest
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/pi/daily-motorsports-digest
+EnvironmentFile=/home/pi/daily-motorsports-digest/.env
+ExecStart=/home/pi/daily-motorsports-digest/.venv/bin/python -m digest.main --config /home/pi/daily-motorsports-digest/config.toml

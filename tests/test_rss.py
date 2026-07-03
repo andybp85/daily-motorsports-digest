@@ -1,7 +1,7 @@
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
-from digest.collect.rss import parse_feed
+from digest.collect.rss import fetch_rss, parse_feed
 
 
 def _entry(title, link, published_struct):
@@ -39,3 +39,23 @@ def test_parse_feed_keeps_entry_with_no_date():
 
     items = parse_feed(parsed, "", since)
     assert len(items) == 1        # keep when we can't tell; downstream window filters
+
+
+def test_fetch_rss_isolates_a_failing_feed(monkeypatch):
+    good_entry = _entry("Recent story", "https://good.com/x",
+                        (2026, 7, 3, 8, 0, 0, 0, 0, 0))
+
+    def fake_parse(url):
+        if "bad" in url:
+            raise ValueError("boom")
+        return SimpleNamespace(entries=[good_entry])
+
+    monkeypatch.setattr("digest.collect.rss.feedparser.parse", fake_parse)
+    feeds = [{"url": "https://bad.com/feed", "series": "f1"},
+             {"url": "https://good.com/feed", "series": "indycar"}]
+
+    items = fetch_rss(feeds, datetime(2026, 7, 2, tzinfo=UTC))
+
+    assert len(items) == 1                      # bad feed skipped, good feed collected
+    assert items[0].url == "https://good.com/x"
+    assert items[0].series == "indycar"

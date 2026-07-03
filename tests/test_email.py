@@ -38,3 +38,13 @@ def test_send_email_calls_ses_with_expected_args():
     assert kwargs["Destination"]["ToAddresses"] == ["you@example.com"]
     assert kwargs["Message"]["Subject"]["Data"] == "Subject"
     assert kwargs["Message"]["Body"]["Html"]["Data"] == "<p>hi</p>"
+
+
+def test_render_html_escapes_feed_content():
+    blurbs = [_blurb('<script>alert(1)</script>', 'Tom & "Jerry" <b>win</b>', 100, 5, ["a.com"])]
+    html = render_html(blurbs, date(2026, 7, 3))
+
+    assert "<script>alert(1)</script>" not in html      # raw markup must not survive
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html   # escaped form present
+    assert "Tom &amp; " in html                          # ampersand escaped
+    assert "&quot;Jerry&quot;" in html                   # quotes escaped (html.escape quote=True)

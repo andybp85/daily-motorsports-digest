@@ -1,5 +1,3 @@
-from datetime import UTC, datetime
-
 from digest.gate import filter_stories
 from digest.models import ScoredStory, Story
 
@@ -49,3 +47,13 @@ def test_escalated_story_passes_suppression():
     out = filter_stories(scored, state, threshold=0.4, calibration=False,
                          suppress_days=3, escalation_factor=1.5)
     assert [s.story.key for s in out] == ["seen"]
+
+
+def test_suppress_applies_even_during_calibration():
+    # calibration skips only the threshold, not dedup: a recently-sent,
+    # non-escalated story is still suppressed. 0.8 < 0.7 * 1.5 = 1.05.
+    scored = [_scored("seen", 0.8)]
+    state = FakeState(sent={"seen": 0.7})
+    out = filter_stories(scored, state, threshold=0.9, calibration=True,
+                         suppress_days=3, escalation_factor=1.5)
+    assert out == []

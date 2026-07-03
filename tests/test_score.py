@@ -16,6 +16,11 @@ def test_rank_normalize_handles_empty():
     assert rank_normalize([]) == []
 
 
+def test_rank_normalize_ties_share_average_rank():
+    assert rank_normalize([5, 5, 5]) == [0.5, 0.5, 0.5]
+    assert rank_normalize([10, 10, 30]) == [0.25, 0.25, 1.0]
+
+
 def _story(key, series, domains, reddit_score, reddit_comments):
     items = [RawItem(source="rss", url=f"https://{d}/x", title=key, domain=d, series=series)
              for d in domains]

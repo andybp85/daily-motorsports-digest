@@ -2,7 +2,7 @@ from digest.models import ScoredStory, Story
 
 
 def rank_normalize(values: list[float]) -> list[float]:
-    """Map values to 0..1 by rank within the pool. Ties share the same rank position."""
+    """Map values to 0..1 by rank within the pool. Tied values share their average rank."""
     n = len(values)
     if n == 0:
         return []
@@ -10,8 +10,15 @@ def rank_normalize(values: list[float]) -> list[float]:
         return [1.0]
     order = sorted(range(n), key=lambda i: values[i])
     ranks = [0.0] * n
-    for position, idx in enumerate(order):
-        ranks[idx] = position / (n - 1)
+    start = 0
+    while start < n:
+        end = start
+        while end + 1 < n and values[order[end + 1]] == values[order[start]]:
+            end += 1
+        shared_rank = ((start + end) / 2) / (n - 1)   # tied values share their average position
+        for pos in range(start, end + 1):
+            ranks[order[pos]] = shared_rank
+        start = end + 1
     return ranks
 
 
@@ -27,7 +34,7 @@ def score_stories(stories: list[Story], series_spike: dict[str, float],
 
     reddit_raw = [_reddit_signal(s) for s in stories]
     breadth_raw = [float(len(s.domains)) for s in stories]
-    spike_raw = [series_spike.get(s.series, 1.0) for s in stories]
+    spike_raw = [series_spike.get(s.series, 1.0) for s in stories]  # 1.0 = neutral (no spike data)
 
     reddit_rank = rank_normalize(reddit_raw)
     breadth_rank = rank_normalize(breadth_raw)

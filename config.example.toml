@@ -1,0 +1,55 @@
+# Copy to config.toml and fill in, or set the matching env vars.
+model = "claude-haiku-4-5"
+threshold = 0.0            # ignored while calibration = true
+calibration = true         # send every day + log scores until tuned
+suppress_days = 3
+escalation_factor = 1.5
+db_path = "state.db"
+timezone = "America/New_York"
+max_stories = 8
+
+[weights]
+reddit = 0.5
+breadth = 0.35
+spike = 0.15
+
+[ses]
+sender = "digest@example.com"
+recipient = "you@example.com"
+aws_region = "us-east-1"
+
+[[rss_feeds]]
+url = "https://www.autosport.com/rss/feed/all"
+series = ""                # "" = classify each entry by title
+
+[[rss_feeds]]
+url = "https://www.the-race.com/feed/"
+series = ""
+
+[[rss_feeds]]
+url = "https://www.motorsport.com/rss/all/news/"
+series = ""
+
+[[rss_feeds]]
+url = "https://racer.com/feed/"
+series = "indycar"
+
+[[subreddits]]
+name = "formula1"
+series = "f1"
+
+[[subreddits]]
+name = "IndyCar"
+series = "indycar"
+
+[keywords]
+series_f1 = ["Formula 1", "Formula One", "F1", "Grand Prix"]
+series_indycar = ["IndyCar", "IndyCar Series", "Indy 500", "Indianapolis 500"]
+teams = ["Red Bull", "Ferrari", "Mercedes", "McLaren", "Aston Martin",
+         "Alpine", "Williams", "Racing Bulls", "Sauber", "Haas",
+         "Penske", "Ganassi", "Andretti", "Arrow McLaren", "Rahal"]
+drivers = ["Verstappen", "Hamilton", "Norris", "Leclerc", "Russell",
+           "Piastri", "Sainz", "Alonso", "Palou", "Newgarden",
+           "Dixon", "Herta", "O'Ward", "Power", "Rossi"]
+anchors = ["Formula 1", "F1", "IndyCar", "Grand Prix", "racing",
+           "motorsport", "qualifying", "podium", "circuit"]

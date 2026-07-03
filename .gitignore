@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 
+# Local config (the committed template is config.example.toml)
+config.toml
+
 # Python
 __pycache__/
 *.py[cod]

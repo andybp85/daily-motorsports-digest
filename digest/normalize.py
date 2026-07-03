@@ -18,6 +18,9 @@ def canonicalize_url(url: str) -> str:
     elif path.endswith("/amp"):
         path = path[:-4]
 
+    if path.endswith("/") and path != "/":
+        path = path.rstrip("/")
+
     kept = [(k, v) for k, v in parse_qsl(parsed.query)
             if not k.startswith(_TRACKING_PREFIXES) and k not in _TRACKING_KEYS]
     query = urlencode(kept)

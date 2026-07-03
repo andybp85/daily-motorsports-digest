@@ -11,7 +11,7 @@ KEYWORDS = {
 
 def test_canonicalize_strips_tracking_and_fragment():
     dirty = "HTTPS://www.Autosport.com/f1/news/story/?utm_source=x&fbclid=y&id=5#top"
-    assert canonicalize_url(dirty) == "https://www.autosport.com/f1/news/story/?id=5"
+    assert canonicalize_url(dirty) == "https://www.autosport.com/f1/news/story?id=5"
 
 
 def test_canonicalize_normalizes_amp_and_trailing_slash():
@@ -32,6 +32,6 @@ def test_normalize_items_sets_domain_and_series():
     item = RawItem(source="rss", url="https://www.autosport.com/f1/?utm_source=z",
                    title="Ferrari upgrade for the Grand Prix")
     out = normalize_items([item], KEYWORDS)[0]
-    assert out.url == "https://www.autosport.com/f1/"
+    assert out.url == "https://www.autosport.com/f1"
     assert out.domain == "www.autosport.com"
     assert out.series == "f1"

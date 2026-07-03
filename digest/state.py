@@ -27,6 +27,9 @@ class StateStore:
         return row[0] if row else None
 
     def record_sent(self, key: str, buzz: float, sent_at: datetime) -> None:
+        # Store timestamps as UTC ISO strings so last_sent()'s lexicographic
+        # comparison equals chronological order. Treat a naive datetime as UTC.
+        sent_at = sent_at.replace(tzinfo=UTC) if sent_at.tzinfo is None else sent_at.astimezone(UTC)
         self.conn.execute(
             "INSERT INTO sent_stories (story_key, buzz_score, sent_at) VALUES (?, ?, ?)",
             (key, buzz, sent_at.isoformat()),

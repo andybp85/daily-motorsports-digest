@@ -17,6 +17,7 @@ def test_parse_submission_maps_fields():
     assert item.reddit_score == 4200
     assert item.reddit_comments == 900
     assert item.series == "f1"
+    assert item.extra == {"permalink": "https://reddit.com/r/formula1/abc"}
 
 
 class FakeSubreddit:
@@ -47,3 +48,23 @@ def test_fetch_reddit_pulls_each_configured_subreddit():
 
     assert {i.series for i in items} == {"f1", "indycar"}
     assert len(items) == 2
+
+
+def test_fetch_reddit_isolates_a_failing_subreddit():
+    class BoomSubreddit:
+        def top(self, time_filter, limit):
+            raise RuntimeError("api down")
+
+    class MixedReddit:
+        def subreddit(self, name):
+            if name == "boom":
+                return BoomSubreddit()
+            return FakeSubreddit([_submission("Good story", "https://good.com/1", 10, 2)])
+
+    subs = [{"name": "boom", "series": "f1"}, {"name": "IndyCar", "series": "indycar"}]
+
+    items = fetch_reddit(MixedReddit(), subs, limit=25)
+
+    assert len(items) == 1                       # failing subreddit skipped
+    assert items[0].url == "https://good.com/1"
+    assert items[0].series == "indycar"

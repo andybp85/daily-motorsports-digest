@@ -17,7 +17,7 @@ def test_build_prompt_includes_titles_and_indices():
     prompt = build_prompt([_scored("Verstappen wins"), _scored("Iowa preview")])
     assert "Verstappen wins" in prompt
     assert "Iowa preview" in prompt
-    assert "0" in prompt and "1" in prompt
+    assert "[0]" in prompt and "[1]" in prompt
 
 
 def test_parse_response_maps_json_back_to_stories():
@@ -64,3 +64,11 @@ def test_summarize_uses_client_response():
 
     blurbs = summarize(FakeClient(), scored, model="claude-haiku-4-5")
     assert blurbs[0].text == "Generated blurb."
+
+
+def test_parse_response_falls_back_to_title_for_omitted_index():
+    scored = [_scored("Verstappen wins"), _scored("Iowa preview")]
+    text = json.dumps([{"index": 0, "blurb": "Max takes it."}])   # index 1 omitted by the model
+    blurbs = parse_response(text, scored)
+    assert blurbs[0].text == "Max takes it."
+    assert blurbs[1].text == "Iowa preview"                       # fell back to the title

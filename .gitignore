@@ -1,0 +1,25 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Local state
+*.db
+*.sqlite
+*.sqlite3
+
+# Tooling
+.idea/
+.memsearch/
+.firecrawl/
+
+# OS
+.DS_Store

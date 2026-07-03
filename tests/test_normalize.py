@@ -18,6 +18,11 @@ def test_canonicalize_normalizes_amp_and_trailing_slash():
     assert canonicalize_url("https://example.com/a/amp/") == "https://example.com/a"
 
 
+def test_canonicalize_preserves_bare_root():
+    assert canonicalize_url("https://example.com/") == "https://example.com/"
+    assert canonicalize_url("https://example.com/amp/") == "https://example.com/"
+
+
 def test_classify_series_prefers_source_hint():
     assert classify_series("Some ambiguous headline", "indycar", KEYWORDS) == "indycar"
 

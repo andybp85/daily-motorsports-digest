@@ -18,6 +18,8 @@ def canonicalize_url(url: str) -> str:
     elif path.endswith("/amp"):
         path = path[:-4]
 
+    path = path or "/"
+
     if path.endswith("/") and path != "/":
         path = path.rstrip("/")
 

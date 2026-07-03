@@ -1,5 +1,3 @@
-from datetime import UTC, datetime
-
 from digest.config import Config
 from digest.models import RawItem
 from digest.pipeline import rank

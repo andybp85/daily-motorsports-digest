@@ -52,15 +52,21 @@ set `calibration = false`, and the "no slow-news-day emails" behavior activates.
 
 ## Deploy on a Raspberry Pi (systemd timer)
 
+The unit files are templates (`__DIR__` / `__USER__` placeholders); the install
+script fills them in for this machine — no hand-editing:
+
 ```bash
-sudo cp deploy/motorsports-digest.service /etc/systemd/system/
-sudo cp deploy/motorsports-digest.timer   /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now motorsports-digest.timer
+sudo ./deploy/install.sh
 ```
 
-Adjust the paths/user in the unit files if you didn't clone to
-`/home/pi/daily-motorsports-digest`. Inspect runs with:
+By default it runs as the invoking user with `DIR` set to this checkout.
+Override either:
+
+```bash
+SERVICE_USER=digest SERVICE_DIR=/opt/digest sudo -E ./deploy/install.sh
+```
+
+Inspect runs with:
 
 ```bash
 systemctl status motorsports-digest.timer

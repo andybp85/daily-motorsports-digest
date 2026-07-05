@@ -78,3 +78,16 @@ journalctl -u motorsports-digest.service -n 50
 ```bash
 .venv/bin/python -m pytest -v
 ```
+
+## Issue tracking (beans)
+
+Follow-up work lives in the committed `.beans/` store (plaintext markdown, one
+file per issue). Because beans are committed, a `pre-commit` hook scans staged
+`.beans/**` and blocks any commit that would leak personal info or secrets.
+
+That hook lives in `.git/hooks/` (untracked, so it never gets committed), which
+means it does **not** survive a clone. Re-arm it in each fresh checkout:
+
+```bash
+bash ~/.claude/skills/pii-commit-guard/install.sh
+```

@@ -13,6 +13,7 @@ class Config:
     db_path: str = "state.db"
     timezone: str = "America/New_York"
     max_stories: int = 8
+    reddit_enabled: bool = True
     weights: dict = field(default_factory=lambda: {"reddit": 0.5, "breadth": 0.35, "spike": 0.15})
     ses_sender: str = ""
     ses_recipient: str = ""
@@ -43,6 +44,7 @@ def load_config(path: str | None = None) -> Config:
         db_path=data.get("db_path", "state.db"),
         timezone=data.get("timezone", "America/New_York"),
         max_stories=int(data.get("max_stories", 8)),
+        reddit_enabled=bool(data.get("reddit_enabled", True)),
         weights=data.get("weights", {"reddit": 0.5, "breadth": 0.35, "spike": 0.15}),
         ses_sender=ses.get("sender", ""),
         ses_recipient=ses.get("recipient", ""),

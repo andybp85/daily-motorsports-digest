@@ -24,12 +24,29 @@ def _collect(cfg, since, end):
     gdelt_items, spikes = fetch_gdelt(cfg.keywords, since, end)
     items += gdelt_items
 
+    items += _collect_reddit(cfg)
+
+    return items, spikes
+
+
+def _collect_reddit(cfg):
+    """Pull Reddit items, or skip cleanly when disabled or unconfigured.
+
+    Reddit's Responsible Builder Policy (late 2025) gates new API OAuth tokens
+    behind manual approval, so fresh installs often have no working creds. Reddit
+    is only one ranking signal — the digest runs on RSS + GDELT without it.
+    """
+    if not cfg.reddit_enabled:
+        print("[reddit] disabled via config (reddit_enabled = false) — skipping")
+        return []
+    if not (cfg.reddit_client_id and cfg.reddit_client_secret and cfg.reddit_user_agent):
+        print("[reddit] no credentials configured — skipping")
+        return []
+
     reddit = praw.Reddit(client_id=cfg.reddit_client_id,
                          client_secret=cfg.reddit_client_secret,
                          user_agent=cfg.reddit_user_agent)
-    items += fetch_reddit(reddit, cfg.subreddits)
-
-    return items, spikes
+    return fetch_reddit(reddit, cfg.subreddits)
 
 
 def run(config_path: str | None, dry_run: bool) -> None:

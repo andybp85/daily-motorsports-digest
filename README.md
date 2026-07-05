@@ -26,9 +26,16 @@ full design.
    Fill in SES sender/recipient, keyword lists, and (in `.env`) Reddit +
    Anthropic + AWS credentials. `.env` and `config.toml` are git-ignored.
 
-3. **Reddit app:** register a *script*-type app at
-   <https://www.reddit.com/prefs/apps> to get `REDDIT_CLIENT_ID` /
-   `REDDIT_CLIENT_SECRET`. Free tier (100 QPM) is fine for personal use.
+3. **Reddit (optional):** Reddit is one ranking signal, not required. As of late
+   2025 Reddit's [Responsible Builder Policy][rbp] gates new API tokens behind
+   manual approval, so self-serve script-app creation at
+   <https://www.reddit.com/prefs/apps> may dead-end in a captcha loop. To run
+   without Reddit, set `reddit_enabled = false` in `config.toml` (or just leave
+   the `REDDIT_*` env vars unset — it skips automatically). To pursue access, see
+   [docs/reddit-api-access-request.md](docs/reddit-api-access-request.md). If you
+   already have working creds, set `REDDIT_CLIENT_ID` / `REDDIT_CLIENT_SECRET`.
+
+[rbp]: https://support.reddithelp.com/hc/en-us/articles/42728983564564-Responsible-Builder-Policy
 
 4. **SES:** verify the sender (and, in sandbox mode, the recipient) address in
    the AWS SES console for your region.

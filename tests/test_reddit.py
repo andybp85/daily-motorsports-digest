@@ -1,6 +1,8 @@
 from types import SimpleNamespace
 
 from digest.collect.reddit import fetch_reddit, parse_submission
+from digest.config import Config
+from digest.main import _collect_reddit
 
 
 def _submission(title, url, score, comments, permalink="/r/formula1/abc"):
@@ -68,3 +70,14 @@ def test_fetch_reddit_isolates_a_failing_subreddit():
     assert len(items) == 1                       # failing subreddit skipped
     assert items[0].url == "https://good.com/1"
     assert items[0].series == "indycar"
+
+
+def test_collect_reddit_skips_when_disabled():
+    cfg = Config(reddit_enabled=False, reddit_client_id="id",
+                 reddit_client_secret="secret", reddit_user_agent="ua")
+    assert _collect_reddit(cfg) == []            # no praw client constructed
+
+
+def test_collect_reddit_skips_when_credentials_missing():
+    cfg = Config(reddit_enabled=True)            # creds default to ""
+    assert _collect_reddit(cfg) == []

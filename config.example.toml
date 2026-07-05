@@ -8,6 +8,12 @@ db_path = "state.db"
 timezone = "America/New_York"
 max_stories = 8
 
+# Reddit is an optional ranking signal. As of late 2025 Reddit gates new API
+# tokens behind manual approval (Responsible Builder Policy), so self-serve app
+# creation may be unavailable. Set false to skip Reddit entirely and run on
+# RSS + GDELT. Leaving it true but omitting REDDIT_* env vars also skips it.
+reddit_enabled = true
+
 [weights]
 reddit = 0.5
 breadth = 0.35

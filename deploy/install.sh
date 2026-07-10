@@ -14,7 +14,11 @@ SERVICE_DIR="${SERVICE_DIR:-$(dirname "$DEPLOY_DIR")}"
 SERVICE_USER="${SERVICE_USER:-${SUDO_USER:-$(id -un)}}"
 UNIT_DIR=/etc/systemd/system
 
-for unit in motorsports-digest.service motorsports-digest.timer; do
+UNITS=(
+    motorsports-digest.service motorsports-digest.timer
+    key-expiry-notify.service key-expiry-notify.timer
+)
+for unit in "${UNITS[@]}"; do
     sed -e "s|__DIR__|$SERVICE_DIR|g" -e "s|__USER__|$SERVICE_USER|g" \
         "$DEPLOY_DIR/$unit" | sudo tee "$UNIT_DIR/$unit" >/dev/null
     echo "installed $UNIT_DIR/$unit"
@@ -22,4 +26,10 @@ done
 
 sudo systemctl daemon-reload
 sudo systemctl enable --now motorsports-digest.timer
-echo "enabled motorsports-digest.timer (user=$SERVICE_USER dir=$SERVICE_DIR)"
+sudo systemctl enable --now key-expiry-notify.timer
+echo "enabled timers (user=$SERVICE_USER dir=$SERVICE_DIR)"
+echo
+echo "One-time: record the key + its expiry so reminders can fire —"
+echo "  $SERVICE_DIR/.venv/bin/python -m digest.notify_key_expiry \\"
+echo "    --config $SERVICE_DIR/config.toml --state $SERVICE_DIR/key-expiry.state \\"
+echo "    --init --expires YYYY-MM-DD"

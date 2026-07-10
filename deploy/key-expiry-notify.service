@@ -1,0 +1,12 @@
+[Unit]
+Description=Anthropic API key-expiry reminders for the motorsports digest
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=__USER__
+Group=__USER__
+WorkingDirectory=__DIR__
+EnvironmentFile=__DIR__/.env
+ExecStart=__DIR__/.venv/bin/python -m digest.notify_key_expiry --config __DIR__/config.toml --state __DIR__/key-expiry.state

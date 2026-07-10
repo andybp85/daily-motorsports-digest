@@ -80,6 +80,24 @@ systemctl status motorsports-digest.timer
 journalctl -u motorsports-digest.service -n 50
 ```
 
+### API key-expiry reminders
+
+`install.sh` also installs a second daily timer (`key-expiry-notify.timer`) that
+emails you at 14, 7, and 1 days before the Anthropic API key expires. Anthropic
+has no API to read a key's own expiry, so it's tracked locally: run this once
+after deploy (and again each time you rotate the key), passing the expiry shown
+in the console:
+
+```bash
+.venv/bin/python -m digest.notify_key_expiry \
+  --config config.toml --state key-expiry.state \
+  --init --expires 2027-07-10
+```
+
+The tracker fingerprints the key (sha256, never stored in plaintext). Rotating
+the key auto-cancels any pending reminders — the daily check sees the value
+changed and drops the stale state file. `key-expiry.state` is gitignored.
+
 ## Tests
 
 ```bash

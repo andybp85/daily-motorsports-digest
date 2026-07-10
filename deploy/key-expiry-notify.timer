@@ -1,0 +1,9 @@
+[Unit]
+Description=Check the Anthropic API key expiry once a day
+
+[Timer]
+OnCalendar=*-*-* 07:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

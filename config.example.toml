@@ -57,5 +57,8 @@ teams = ["Red Bull", "Ferrari", "Mercedes", "McLaren", "Aston Martin",
 drivers = ["Verstappen", "Hamilton", "Norris", "Leclerc", "Russell",
            "Piastri", "Sainz", "Alonso", "Palou", "Newgarden",
            "Dixon", "Herta", "O'Ward", "Power", "Rossi"]
-anchors = ["Formula 1", "F1", "IndyCar", "Grand Prix", "racing",
-           "motorsport", "qualifying", "podium", "circuit"]
+# Anchors only gate a bare driver surname (driver + anchor = keep), so short
+# session words are safe here. "GP" abbreviates "Grand Prix"; kept out of the
+# series lists because those feed the GDELT query, where "GP" is too broad.
+anchors = ["Formula 1", "F1", "IndyCar", "Grand Prix", "GP", "racing",
+           "motorsport", "qualifying", "practice", "sprint", "podium", "circuit"]

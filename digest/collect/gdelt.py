@@ -2,6 +2,7 @@ import time
 from datetime import datetime
 
 from digest.models import RawItem
+from digest.normalize import is_relevant
 
 
 def build_keyword_list(keywords: dict, kind: str) -> list[str]:
@@ -14,17 +15,6 @@ def build_keyword_list(keywords: dict, kind: str) -> list[str]:
     """
     series_key = "series_f1" if kind == "f1" else "series_indycar"
     return list(keywords.get(series_key, []))
-
-
-def is_relevant(title: str, keywords: dict) -> bool:
-    """Keep if the title has a series/team term, or a driver name WITH a motorsport anchor."""
-    low = title.lower()
-    series_terms = keywords.get("series_f1", []) + keywords.get("series_indycar", [])
-    if any(t.lower() in low for t in series_terms + keywords.get("teams", [])):
-        return True
-    has_driver = any(d.lower() in low for d in keywords.get("drivers", []))
-    has_anchor = any(a.lower() in low for a in keywords.get("anchors", []))
-    return has_driver and has_anchor
 
 
 def parse_articles(rows: list[dict], keywords: dict, series: str = "") -> list[RawItem]:

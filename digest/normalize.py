@@ -42,13 +42,31 @@ def classify_series(title: str, source_series: str, keywords: dict) -> str:
     return ""
 
 
+def is_relevant(title: str, keywords: dict) -> bool:
+    """Keep if the title has a series/team term, or a driver name WITH a motorsport anchor."""
+    low = title.lower()
+    series_terms = keywords.get("series_f1", []) + keywords.get("series_indycar", [])
+    if any(t.lower() in low for t in series_terms + keywords.get("teams", [])):
+        return True
+    has_driver = any(d.lower() in low for d in keywords.get("drivers", []))
+    has_anchor = any(a.lower() in low for a in keywords.get("anchors", []))
+    return has_driver and has_anchor
+
+
 def normalize_items(items: list[RawItem], keywords: dict) -> list[RawItem]:
-    """Return new items with canonical URL, extracted domain, and resolved series."""
+    """Return new items with canonical URL, extracted domain, and resolved series.
+
+    Drops items that neither classify to a followed series nor pass is_relevant —
+    without this gate the general motorsport feeds (autosport, motorsport.com…)
+    leak MotoGP, Formula E, Supercars, etc. into the F1/IndyCar digest.
+    """
     out = []
     for it in items:
+        series = classify_series(it.title, it.series, keywords)
+        if not series and not is_relevant(it.title, keywords):
+            continue
         url = canonicalize_url(it.url)
         domain = urlparse(url).netloc
-        series = classify_series(it.title, it.series, keywords)
         out.append(RawItem(
             source=it.source, url=url, title=it.title.strip(), domain=domain,
             published_at=it.published_at, reddit_score=it.reddit_score,

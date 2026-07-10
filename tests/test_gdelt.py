@@ -11,8 +11,11 @@ KEYWORDS = {
 
 def test_build_keyword_list_scopes_to_series():
     f1 = build_keyword_list(KEYWORDS, "f1")
-    assert "Formula 1" in f1 and "Ferrari" in f1 and "Verstappen" in f1
-    assert "Indy 500" not in f1
+    assert set(f1) == {"Formula 1", "F1", "Grand Prix"}     # series terms only
+    assert "Indy 500" not in f1                             # not the other series
+    # teams/drivers are NOT in the API query — they'd overflow GDELT's length
+    # limit; is_relevant() applies them downstream instead.
+    assert "Ferrari" not in f1 and "Verstappen" not in f1
 
 
 def test_is_relevant_accepts_series_term():

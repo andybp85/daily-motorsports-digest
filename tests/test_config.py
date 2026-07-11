@@ -16,7 +16,7 @@ def test_load_config_reads_toml_and_env(tmp_path, monkeypatch):
         max_stories = 8
 
         [weights]
-        reddit = 0.5
+        social = 0.5
         breadth = 0.35
         spike = 0.15
 

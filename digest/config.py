@@ -14,7 +14,7 @@ class Config:
     timezone: str = "America/New_York"
     max_stories: int = 8
     reddit_enabled: bool = True
-    weights: dict = field(default_factory=lambda: {"reddit": 0.5, "breadth": 0.35, "spike": 0.15})
+    weights: dict = field(default_factory=lambda: {"social": 0.5, "breadth": 0.35, "spike": 0.15})
     ses_sender: str = ""
     ses_recipient: str = ""
     aws_region: str = "us-east-1"
@@ -45,7 +45,7 @@ def load_config(path: str | None = None) -> Config:
         timezone=data.get("timezone", "America/New_York"),
         max_stories=int(data.get("max_stories", 8)),
         reddit_enabled=bool(data.get("reddit_enabled", True)),
-        weights=data.get("weights", {"reddit": 0.5, "breadth": 0.35, "spike": 0.15}),
+        weights=data.get("weights", {"social": 0.5, "breadth": 0.35, "spike": 0.15}),
         ses_sender=ses.get("sender", ""),
         ses_recipient=ses.get("recipient", ""),
         aws_region=ses.get("aws_region", "us-east-1"),

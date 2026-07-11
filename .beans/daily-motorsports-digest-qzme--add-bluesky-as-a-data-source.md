@@ -1,11 +1,11 @@
 ---
 # daily-motorsports-digest-qzme
 title: Add Bluesky as a data source
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-07-10T16:05:24Z
-updated_at: 2026-07-11T19:48:41Z
+updated_at: 2026-07-11T22:36:21Z
 parent: daily-motorsports-digest-z6pt
 ---
 
@@ -25,3 +25,23 @@ Integrate Bluesky API to pull posts about motorsports series, drivers, teams, an
 For each clustered Story (already has canonical_url + domains), find Bluesky posts embedding that article URL, sum like+repost+reply into the reddit_raw slot. Inherently noise-resistant (an off-topic post won't link an F1 article) and mirrors how the Reddit signal was meant to work. The ~53% link density makes it viable.
 
 **Verdict:** Worth building, F1-focused, via URL matching, ~1 day. Revives the F1 half of the community signal; IndyCar stays flat. Independent quick win first: reweight scoring so it stops leaning on the dead reddit signal (see follow-up task).
+
+## Feasibility gate — GO (2026-07-11)
+
+Probe of 6 real story URLs: every article had 1-2 Bluesky posts linking it (direct URL search, confirmed via embed-URI match). Per-story matched engagement Σ(like+repost+reply) ranged 1-6. Low absolute numbers but present and varying -> sufficient for rank_normalize to differentiate. Decision: implement model A (per-story URL match) as specced; no fallback needed.
+
+Note: probe pulled unfiltered RSS (WEC/MotoGP items surfaced) — a probe artifact; the real pipeline gates to F1/IndyCar via is_relevant. F1 volume/engagement already confirmed healthy in the earlier volume probe.
+
+Deploy note: BSKY_HANDLE must be the account handle (andrewstanish.com) or email — NOT the app-password label.
+
+## Summary of Changes
+
+Implemented post-cluster Bluesky enrichment (model A) end-to-end via subagent-driven TDD:
+- Renamed the dead reddit ranking signal to social (score.py, config).
+- config: bluesky_enabled toggle + BSKY_HANDLE/BSKY_APP_PASSWORD from env.
+- digest/collect/bluesky.py: pure matching helpers (normalize_url, external_uri, post_links_story, match_posts, engagement), BlueskyClient (stdlib urllib, per-call timeout), and enrich() that appends a synthetic engagement RawItem per linked story.
+- score_pool gained an optional enrich seam; main.run builds the client and passes it.
+
+Feasibility gate: GO. Smoke test (enabled dry-run) de-flattened scores from a constant 0.511 baseline to a real 0.462-0.763 spread — the signal reranks the digest as intended. Full suite 82 passing.
+
+Deploy: set bluesky_enabled=true and BSKY_HANDLE=andrewstanish.com (or email) in the server .env. Degrades cleanly when disabled/unconfigured/failing.

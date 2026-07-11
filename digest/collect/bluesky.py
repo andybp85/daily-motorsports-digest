@@ -1,6 +1,9 @@
+import json
 import re
+import urllib.parse
+import urllib.request
 
-from digest.models import Story
+from digest.models import RawItem, Story
 
 
 def normalize_url(url: str) -> str:
@@ -38,3 +41,71 @@ def engagement(posts: list[dict]) -> int:
     """Total like + repost + reply across posts."""
     return sum(p.get("likeCount", 0) + p.get("repostCount", 0) + p.get("replyCount", 0)
                for p in posts)
+
+
+_BSKY_API = "https://bsky.social/xrpc"
+
+
+class BlueskyClient:
+    """Thin authenticated wrapper over the Bluesky search endpoint (stdlib only).
+
+    Each HTTP call is bounded by `timeout` so a stalled endpoint can't hang the
+    digest — the same failure mode fixed for GDELT.
+    """
+
+    def __init__(self, handle: str, app_password: str, timeout: float = 15.0) -> None:
+        self._timeout = timeout
+        self._token = self._create_session(handle, app_password)
+
+    def _create_session(self, identifier: str, password: str) -> str:
+        body = json.dumps({"identifier": identifier, "password": password}).encode()
+        req = urllib.request.Request(
+            f"{_BSKY_API}/com.atproto.server.createSession",
+            data=body, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=self._timeout) as resp:
+            return json.load(resp)["accessJwt"]
+
+    def search_posts(self, query: str, *, limit: int = 100, sort: str = "top") -> list[dict]:
+        params = urllib.parse.urlencode({"q": query, "limit": limit, "sort": sort})
+        req = urllib.request.Request(
+            f"{_BSKY_API}/app.bsky.feed.searchPosts?{params}",
+            headers={"Authorization": f"Bearer {self._token}"})
+        with urllib.request.urlopen(req, timeout=self._timeout) as resp:
+            return json.load(resp).get("posts", [])
+
+
+def _title_terms(title: str, n: int = 6) -> str:
+    """A few significant words from the headline for a text search."""
+    words = [w for w in re.findall(r"[A-Za-z0-9']+", title) if len(w) > 2]
+    return " ".join(words[:n])
+
+
+def _story_posts(story: Story, client: object) -> list[dict]:
+    """Posts linking the story: direct URL search first, title-terms fallback."""
+    hits = match_posts(story, client.search_posts(story.canonical_url, sort="latest"))
+    if hits:
+        return hits
+    return match_posts(story, client.search_posts(_title_terms(story.title)))
+
+
+def enrich(stories: list[Story], client: object | None) -> list[Story]:
+    """Attach a synthetic Bluesky engagement item to each story with linking posts.
+
+    No-op when `client` is None. One story's search failure is logged and skipped
+    so it cannot kill the run.
+    """
+    if client is None:
+        return stories
+    for story in stories:
+        try:
+            posts = _story_posts(story, client)
+        except Exception as exc:                    # noqa: BLE001 — one story must not kill the run
+            print(f"[bluesky] search failed for {story.canonical_url}: {exc}")
+            continue
+        if not posts:
+            continue
+        story.items.append(RawItem(
+            source="bluesky", url=story.canonical_url, title=story.title,
+            reddit_score=engagement(posts), series=story.series,
+        ))
+    return stories

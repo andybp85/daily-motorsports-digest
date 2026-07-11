@@ -47,6 +47,18 @@ def test_score_pool_returns_full_pregate_pool():
     assert len(scored) == 1
 
 
+def test_score_pool_applies_enrich_between_cluster_and_score():
+    calls = {"n": 0}
+
+    def fake_enrich(stories):
+        calls["n"] = len(stories)
+        return stories
+
+    raw = [RawItem(source="rss", url="https://a/x", title="F1 news", series="f1")]
+    score_pool(raw, {"f1": 1.0}, _cfg(), enrich=fake_enrich)
+    assert calls["n"] > 0
+
+
 def test_rank_gate_suppresses_recently_sent():
     class SuppressState:
         def last_sent(self, key, within_days):

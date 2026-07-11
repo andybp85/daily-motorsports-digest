@@ -1,15 +1,20 @@
+from collections.abc import Callable
+
 from digest.cluster import cluster_items
 from digest.config import Config
 from digest.gate import filter_stories
-from digest.models import RawItem, ScoredStory
+from digest.models import RawItem, ScoredStory, Story
 from digest.normalize import normalize_items
 from digest.score import score_stories
 
 
-def score_pool(raw_items: list[RawItem], series_spike: dict[str, float], cfg: Config) -> list[ScoredStory]:
-    """Pure normalize → cluster → score. Returns the day's full pre-gate pool, sorted by buzz desc."""
+def score_pool(raw_items: list[RawItem], series_spike: dict[str, float], cfg: Config,
+               enrich: Callable[[list[Story]], list[Story]] | None = None) -> list[ScoredStory]:
+    """Pure normalize → cluster → [enrich] → score. Returns the day's full pre-gate pool, sorted by buzz desc."""
     normalized = normalize_items(raw_items, cfg.keywords)
     stories = cluster_items(normalized)
+    if enrich is not None:
+        stories = enrich(stories)
     return score_stories(stories, series_spike, cfg.weights)
 
 

@@ -1,7 +1,7 @@
 from digest.models import RawItem, Story
 from digest.score import rank_normalize, score_stories
 
-WEIGHTS = {"reddit": 0.5, "breadth": 0.35, "spike": 0.15}
+WEIGHTS = {"social": 0.5, "breadth": 0.35, "spike": 0.15}
 
 
 def test_rank_normalize_maps_to_zero_one():

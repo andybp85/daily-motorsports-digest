@@ -5,10 +5,11 @@ import anthropic
 import boto3
 import praw
 
+from digest.collect import bluesky
 from digest.collect.gdelt import fetch_gdelt
 from digest.collect.reddit import fetch_reddit
 from digest.collect.rss import fetch_rss
-from digest.config import load_config
+from digest.config import Config, load_config
 from digest.email import render_html, render_subject, send_email
 from digest.gate import filter_stories
 from digest.pipeline import score_pool
@@ -49,6 +50,21 @@ def _collect_reddit(cfg):
     return fetch_reddit(reddit, cfg.subreddits)
 
 
+def _bluesky_client(cfg: Config) -> bluesky.BlueskyClient | None:
+    """A logged-in BlueskyClient, or None when disabled/unconfigured/auth fails."""
+    if not cfg.bluesky_enabled:
+        print("[bluesky] disabled via config (bluesky_enabled = false) — skipping")
+        return None
+    if not (cfg.bsky_handle and cfg.bsky_app_password):
+        print("[bluesky] no credentials configured — skipping")
+        return None
+    try:
+        return bluesky.BlueskyClient(cfg.bsky_handle, cfg.bsky_app_password)
+    except Exception as exc:                        # noqa: BLE001 — degrade, never crash the run
+        print(f"[bluesky] auth failed: {exc} — skipping")
+        return None
+
+
 def run(config_path: str | None, dry_run: bool) -> None:
     cfg = load_config(config_path)
     end = datetime.now(UTC)
@@ -57,7 +73,9 @@ def run(config_path: str | None, dry_run: bool) -> None:
     state = StateStore(cfg.db_path)
     try:
         raw, spikes = _collect(cfg, since, end)
-        scored = score_pool(raw, spikes, cfg)          # full pre-gate pool, sorted desc
+        client_bsky = _bluesky_client(cfg)
+        enrich = (lambda stories: bluesky.enrich(stories, client_bsky)) if client_bsky else None
+        scored = score_pool(raw, spikes, cfg, enrich=enrich)          # full pre-gate pool, sorted desc
         survivors = filter_stories(
             scored, state,
             threshold=cfg.threshold, calibration=cfg.calibration,

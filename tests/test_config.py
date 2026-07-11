@@ -16,7 +16,7 @@ def test_load_config_reads_toml_and_env(tmp_path, monkeypatch):
         max_stories = 8
 
         [weights]
-        reddit = 0.5
+        social = 0.5
         breadth = 0.35
         spike = 0.15
 
@@ -56,6 +56,19 @@ def test_load_config_reads_toml_and_env(tmp_path, monkeypatch):
     assert cfg.rss_feeds[0]["series"] == "indycar"
     assert cfg.subreddits[0]["name"] == "formula1"
     assert "Verstappen" in cfg.keywords["drivers"]
+
+
+def test_load_config_reads_bluesky(tmp_path, monkeypatch):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text('bluesky_enabled = true\n')
+    monkeypatch.setenv("BSKY_HANDLE", "andy.example.com")
+    monkeypatch.setenv("BSKY_APP_PASSWORD", "abcd-efgh-ijkl-mnop")
+
+    cfg = load_config(str(cfg_file))
+
+    assert cfg.bluesky_enabled is True
+    assert cfg.bsky_handle == "andy.example.com"
+    assert cfg.bsky_app_password == "abcd-efgh-ijkl-mnop"
 
 
 def test_load_config_defaults_when_calibration_true(tmp_path):

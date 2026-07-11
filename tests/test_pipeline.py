@@ -14,7 +14,7 @@ class FakeState:
 def _cfg():
     return Config(
         calibration=True, suppress_days=3, escalation_factor=1.5,
-        weights={"reddit": 0.5, "breadth": 0.35, "spike": 0.15},
+        weights={"social": 0.5, "breadth": 0.35, "spike": 0.15},
         keywords={"series_f1": ["F1", "Grand Prix"], "series_indycar": ["IndyCar"],
                   "teams": [], "drivers": [], "anchors": []},
     )
@@ -45,6 +45,18 @@ def test_score_pool_returns_full_pregate_pool():
     raw = [RawItem(source="rss", url="https://a/x", title="F1 news", series="f1")]
     scored = score_pool(raw, {"f1": 1.0}, _cfg())
     assert len(scored) == 1
+
+
+def test_score_pool_applies_enrich_between_cluster_and_score():
+    calls = {"n": 0}
+
+    def fake_enrich(stories):
+        calls["n"] = len(stories)
+        return stories
+
+    raw = [RawItem(source="rss", url="https://a/x", title="F1 news", series="f1")]
+    score_pool(raw, {"f1": 1.0}, _cfg(), enrich=fake_enrich)
+    assert calls["n"] > 0
 
 
 def test_rank_gate_suppresses_recently_sent():

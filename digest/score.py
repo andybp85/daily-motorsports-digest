@@ -22,7 +22,7 @@ def rank_normalize(values: list[float]) -> list[float]:
     return ranks
 
 
-def _reddit_signal(story: Story) -> float:
+def _social_signal(story: Story) -> float:
     return float(sum(i.reddit_score + i.reddit_comments for i in story.items))
 
 
@@ -32,21 +32,21 @@ def score_stories(stories: list[Story], series_spike: dict[str, float],
     if not stories:
         return []
 
-    reddit_raw = [_reddit_signal(s) for s in stories]
+    social_raw = [_social_signal(s) for s in stories]
     breadth_raw = [float(len(s.domains)) for s in stories]
     spike_raw = [series_spike.get(s.series, 1.0) for s in stories]  # 1.0 = neutral (no spike data)
 
-    reddit_rank = rank_normalize(reddit_raw)
+    social_rank = rank_normalize(social_raw)
     breadth_rank = rank_normalize(breadth_raw)
     spike_rank = rank_normalize(spike_raw)
 
     scored = []
     for i, story in enumerate(stories):
-        buzz = (weights["reddit"] * reddit_rank[i]
+        buzz = (weights["social"] * social_rank[i]
                 + weights["breadth"] * breadth_rank[i]
                 + weights["spike"] * spike_rank[i])
         scored.append(ScoredStory(
-            story=story, reddit_raw=reddit_raw[i], breadth_raw=breadth_raw[i],
+            story=story, reddit_raw=social_raw[i], breadth_raw=breadth_raw[i],
             spike_raw=spike_raw[i], buzz=buzz,
         ))
     scored.sort(key=lambda s: s.buzz, reverse=True)

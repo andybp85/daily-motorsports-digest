@@ -40,7 +40,9 @@ Not TDD; an exploratory decision that gates the *matcher* only. The rest of the 
 
 **Files:** none committed (probe lives in a scratch dir).
 
-- [ ] **Step 1: Get a fresh Bluesky app password**
+**GATE RESULT: GO (2026-07-11)** — every probed article had 1–2 linking Bluesky posts; implement model A (Tasks 2–7), skip the Contingency.
+
+- [x] **Step 1: Get a fresh Bluesky app password**
 
 Ask the user to create one (bsky.app → Settings → Privacy & Security → App Passwords) and export it for this session only:
 

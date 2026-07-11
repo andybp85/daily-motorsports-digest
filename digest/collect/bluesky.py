@@ -25,8 +25,8 @@ def post_links_story(post: dict, story_url: str) -> bool:
         return False
     if normalize_url(external_uri(post)) == target:
         return True
-    text = (post.get("record", {}).get("text", "") or "").lower()
-    return target in text
+    text = post.get("record", {}).get("text", "") or ""
+    return any(normalize_url(u) == target for u in re.findall(r"https?://\S+", text))
 
 
 def match_posts(story: Story, posts: list[dict]) -> list[dict]:

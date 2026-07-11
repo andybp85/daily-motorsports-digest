@@ -36,6 +36,24 @@ def test_post_links_story_matches_embed_or_raw_link():
     assert not post_links_story(_post(uri="https://other.com/y", text="off topic"), story.canonical_url)
 
 
+def test_post_links_story_rejects_longer_slug_at_same_domain():
+    story = _story("https://autosport.com/f1/news/x")
+    post = _post(text="great read https://autosport.com/f1/news/x-crash-report")
+    assert not post_links_story(post, story.canonical_url)
+
+
+def test_post_links_story_rejects_lookalike_domain():
+    story = _story("https://autosport.com/f1/news/x")
+    post = _post(text="great read https://fakeautosport.com/f1/news/x")
+    assert not post_links_story(post, story.canonical_url)
+
+
+def test_post_links_story_matches_exact_raw_link():
+    story = _story("https://autosport.com/f1/news/x")
+    post = _post(text="great read https://autosport.com/f1/news/x")
+    assert post_links_story(post, story.canonical_url)
+
+
 def test_match_posts_filters_to_linking_posts():
     story = _story("https://autosport.com/f1/news/x")
     posts = [_post(uri="https://autosport.com/f1/news/x", likes=5),

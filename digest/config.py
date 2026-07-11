@@ -26,6 +26,9 @@ class Config:
     reddit_client_secret: str = ""
     reddit_user_agent: str = ""
     anthropic_api_key: str = ""
+    bluesky_enabled: bool = False
+    bsky_handle: str = ""
+    bsky_app_password: str = ""
 
 
 def load_config(path: str | None = None) -> Config:
@@ -56,5 +59,8 @@ def load_config(path: str | None = None) -> Config:
         reddit_client_secret=os.environ.get("REDDIT_CLIENT_SECRET", ""),
         reddit_user_agent=os.environ.get("REDDIT_USER_AGENT", ""),
         anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+        bluesky_enabled=bool(data.get("bluesky_enabled", False)),
+        bsky_handle=os.environ.get("BSKY_HANDLE", ""),
+        bsky_app_password=os.environ.get("BSKY_APP_PASSWORD", ""),
     )
     return cfg

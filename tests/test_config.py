@@ -58,6 +58,19 @@ def test_load_config_reads_toml_and_env(tmp_path, monkeypatch):
     assert "Verstappen" in cfg.keywords["drivers"]
 
 
+def test_load_config_reads_bluesky(tmp_path, monkeypatch):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text('bluesky_enabled = true\n')
+    monkeypatch.setenv("BSKY_HANDLE", "andy.example.com")
+    monkeypatch.setenv("BSKY_APP_PASSWORD", "abcd-efgh-ijkl-mnop")
+
+    cfg = load_config(str(cfg_file))
+
+    assert cfg.bluesky_enabled is True
+    assert cfg.bsky_handle == "andy.example.com"
+    assert cfg.bsky_app_password == "abcd-efgh-ijkl-mnop"
+
+
 def test_load_config_defaults_when_calibration_true(tmp_path):
     cfg_file = tmp_path / "config.toml"
     cfg_file.write_text(

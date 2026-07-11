@@ -14,6 +14,10 @@ max_stories = 8
 # RSS + GDELT. Leaving it true but omitting REDDIT_* env vars also skips it.
 reddit_enabled = true
 
+# Bluesky enrichment: scores each story by how much its article is shared on
+# Bluesky. Needs BSKY_HANDLE + BSKY_APP_PASSWORD in .env. Disabled by default.
+bluesky_enabled = false
+
 [weights]
 social = 0.5
 breadth = 0.35

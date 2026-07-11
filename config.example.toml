@@ -15,7 +15,7 @@ max_stories = 8
 reddit_enabled = true
 
 [weights]
-reddit = 0.5
+social = 0.5
 breadth = 0.35
 spike = 0.15
 

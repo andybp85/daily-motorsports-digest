@@ -14,7 +14,7 @@ class FakeState:
 def _cfg():
     return Config(
         calibration=True, suppress_days=3, escalation_factor=1.5,
-        weights={"reddit": 0.5, "breadth": 0.35, "spike": 0.15},
+        weights={"social": 0.5, "breadth": 0.35, "spike": 0.15},
         keywords={"series_f1": ["F1", "Grand Prix"], "series_indycar": ["IndyCar"],
                   "teams": [], "drivers": [], "anchors": []},
     )

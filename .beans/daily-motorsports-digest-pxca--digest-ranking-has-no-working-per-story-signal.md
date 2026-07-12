@@ -1,11 +1,11 @@
 ---
 # daily-motorsports-digest-pxca
 title: Digest ranking has no working per-story signal
-status: todo
+status: completed
 type: bug
 priority: high
 created_at: 2026-07-11T19:50:41Z
-updated_at: 2026-07-11T19:50:41Z
+updated_at: 2026-07-12T15:51:12Z
 ---
 
 Measured 2026-07-11: on an 18-story RSS pool, ALL three ranking signals are effectively flat, so buzz is 0.500 for every story (1 distinct score / 18). Reweighting is a no-op — verified across reddit.5/breadth.35/spike.15, reddit.0/breadth.70/spike.30, reddit.0/breadth.85/spike.15: all give 1 distinct score.

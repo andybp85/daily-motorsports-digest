@@ -1,7 +1,9 @@
+import socket
 import time
 from datetime import datetime
 
 from digest.collect.gdelt import (
+    _prefer_ipv4,
     build_keyword_list,
     fetch_gdelt,
     parse_articles,
@@ -80,6 +82,33 @@ def test_fetch_gdelt_survives_a_hanging_search():
 
     assert articles == []  # nothing collected on timeout
     assert spikes == {"f1": 1.0, "indycar": 1.0}  # spikes fall back to neutral
+
+
+def test_prefer_ipv4_orders_ipv4_first(monkeypatch):
+    """Inside the block, IPv4 sorts ahead of IPv6 so a black-holed IPv6 route
+    (observed on the Pi deploy) never wins the connect race, while IPv6 stays
+    as a fallback for hosts where IPv4 is the broken path.
+    """
+    v6 = (socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("::1", 80, 0, 0))
+    v4 = (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 80))
+    monkeypatch.setattr(socket, "getaddrinfo", lambda *a, **k: [v6, v4])
+
+    with _prefer_ipv4():
+        families = [row[0] for row in socket.getaddrinfo("host", 80)]
+
+    assert families == [socket.AF_INET, socket.AF_INET6]
+
+
+def test_prefer_ipv4_restores_resolver(monkeypatch):
+    """The patch is scoped — the original resolver returns after the block."""
+    def original(*_args, **_kwargs):
+        return ["sentinel"]
+
+    monkeypatch.setattr(socket, "getaddrinfo", original)
+    with _prefer_ipv4():
+        pass
+
+    assert socket.getaddrinfo is original
 
 
 def test_spike_ratio_computes_last_over_mean():

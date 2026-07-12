@@ -1,4 +1,5 @@
 import signal
+import socket
 import time
 from contextlib import contextmanager
 from datetime import datetime
@@ -35,6 +36,32 @@ def _time_limit(seconds: float):
     finally:
         signal.setitimer(signal.ITIMER_REAL, 0)
         signal.signal(signal.SIGALRM, previous)
+
+
+@contextmanager
+def _prefer_ipv4():
+    """Try IPv4 before IPv6 for the wrapped block.
+
+    Some networks black-hole the IPv6 route to api.gdeltproject.org (observed
+    on the Pi deploy: `curl -6` fails, `curl -4` works). Python's requests/
+    urllib3 walk getaddrinfo results in order and stall on the dead IPv6
+    attempt until the SIGALRM timeout fires, so GDELT contributes nothing.
+    Sorting IPv4 first lets the working address win the connect; IPv6 stays
+    as a fallback for hosts where IPv4 is the broken path. A host-level
+    /etc/gai.conf preference did not reach CPython's resolver, so we set it
+    in-process. Global but short-lived — safe because the digest is
+    single-threaded and GDELT is the only caller in this window.
+    """
+    resolve = socket.getaddrinfo
+
+    def ipv4_first(*args: object, **kwargs: object) -> list:
+        return sorted(resolve(*args, **kwargs), key=lambda row: row[0] != socket.AF_INET)
+
+    socket.getaddrinfo = ipv4_first
+    try:
+        yield
+    finally:
+        socket.getaddrinfo = resolve
 
 
 def build_keyword_list(keywords: dict, kind: str) -> list[str]:
@@ -95,12 +122,15 @@ def _search_with_retry(
     Each attempt is bounded by `timeout`: a wedged connection raises GdeltTimeout
     rather than blocking forever. That is not retried — it propagates to the
     caller, which degrades to neutral spikes and no articles for the series.
+
+    IPv4 is preferred over IPv6 for the call: some deploys can't reach GDELT
+    over IPv6 and would otherwise stall until the timeout (see _prefer_ipv4).
     """
     from gdeltdoc.errors import RateLimitError
 
     for attempt in range(attempts):
         try:
-            with _time_limit(timeout):
+            with _prefer_ipv4(), _time_limit(timeout):
                 return search()
         except RateLimitError:
             if attempt == attempts - 1:

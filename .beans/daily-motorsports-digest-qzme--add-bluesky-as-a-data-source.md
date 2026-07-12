@@ -32,7 +32,7 @@ Probe of 6 real story URLs: every article had 1-2 Bluesky posts linking it (dire
 
 Note: probe pulled unfiltered RSS (WEC/MotoGP items surfaced) — a probe artifact; the real pipeline gates to F1/IndyCar via is_relevant. F1 volume/engagement already confirmed healthy in the earlier volume probe.
 
-Deploy note: BSKY_HANDLE must be the account handle (andrewstanish.com) or email — NOT the app-password label.
+Deploy note: BSKY_HANDLE must be the account handle (<domain>) or email — NOT the app-password label.
 
 ## Summary of Changes
 
@@ -44,4 +44,4 @@ Implemented post-cluster Bluesky enrichment (model A) end-to-end via subagent-dr
 
 Feasibility gate: GO. Smoke test (enabled dry-run) de-flattened scores from a constant 0.511 baseline to a real 0.462-0.763 spread — the signal reranks the digest as intended. Full suite 82 passing.
 
-Deploy: set bluesky_enabled=true and BSKY_HANDLE=andrewstanish.com (or email) in the server .env. Degrades cleanly when disabled/unconfigured/failing.
+Deploy: set bluesky_enabled=true and BSKY_HANDLE=<domain> (or email) in the server .env. Degrades cleanly when disabled/unconfigured/failing.

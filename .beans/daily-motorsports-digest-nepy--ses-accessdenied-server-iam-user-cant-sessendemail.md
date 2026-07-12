@@ -1,11 +1,11 @@
 ---
 # daily-motorsports-digest-nepy
 title: 'SES AccessDenied: server IAM user can''t ses:SendEmail'
-status: todo
+status: completed
 type: bug
 priority: critical
 created_at: 2026-07-11T16:08:35Z
-updated_at: 2026-07-11T18:11:30Z
+updated_at: 2026-07-12T15:40:28Z
 ---
 
 The IAM user the server runs as (arn:aws:iam::<ACCOUNT_ID>:user/motorsports-digest, creds in .env / systemd EnvironmentFile) gets AccessDenied on ses:SendEmail for identity <recipient-email>:

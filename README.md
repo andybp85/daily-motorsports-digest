@@ -1,8 +1,10 @@
 # Daily Motorsports Digest
 
-A daily job that emails a buzz-ranked recap of F1/IndyCar news, sourced from
+A daily job that emails a buzz-ranked recap of motorsports news, sourced from
 RSS + GDELT + Reddit, summarized by Claude Haiku 4.5, and sent via Amazon SES.
-No email on genuinely slow news days.
+No email on genuinely slow news days. The followed series are configurable
+(ships with F1, IndyCar, WEC, IMSA, NASCAR, and Formula E) — see
+[Series configuration](#series-configuration).
 
 See `docs/superpowers/specs/2026-07-03-motorsports-digest-design.md` for the
 full design.
@@ -23,8 +25,10 @@ full design.
    cp .env.example .env
    ```
 
-   Fill in SES sender/recipient, keyword lists, and (in `.env`) Reddit +
-   Anthropic + AWS credentials. `.env` and `config.toml` are git-ignored.
+   Fill in SES sender/recipient, the followed-series registry, and (in
+   `.env`) Reddit + Anthropic + AWS credentials. `.env` and `config.toml` are
+   git-ignored. See [Series configuration](#series-configuration) for the
+   `[[series]]` block.
 
 3. **Reddit (optional):** Reddit is one ranking signal, not required. As of late
    2025 Reddit's [Responsible Builder Policy][rbp] gates new API tokens behind
@@ -39,6 +43,79 @@ full design.
 
 4. **SES:** verify the sender (and, in sandbox mode, the recipient) address in
    the AWS SES console for your region.
+
+## Series configuration
+
+Followed series live in `config.toml` as a registry: one `[[series]]` block
+per series, in priority order. There is no hardcoded keyword list in code —
+the registry *is* the relevance filter.
+
+```toml
+[[series]]
+id = "f1"
+label = "Formula 1"
+terms = ["Formula 1", "Formula One", "F1", "Grand Prix",
+         "Verstappen", "Hamilton", "Norris", "Red Bull Racing"]
+
+[[series]]
+id = "indycar"
+label = "IndyCar"
+terms = ["IndyCar", "Indy 500", "Palou", "Newgarden", "Penske", "Ganassi"]
+```
+
+- **`id`** — lowercase slug, used internally (e.g. as a `core_series` entry or
+  a feed's forced `series` value).
+- **`label`** — display name shown in the digest.
+- **`terms`** — list of distinctive title strings. A story is kept only if its
+  title matches (case-insensitive substring) a term from some series in the
+  registry; otherwise it's dropped as irrelevant. **Registry order is match
+  priority** — the first series whose term matches wins, so put more specific
+  series before more general ones when a title could plausibly match both.
+
+See `config.example.toml` for the full registry shipped by default (F1,
+IndyCar, WEC, IMSA, NASCAR, Formula E).
+
+### Selection: `max_stories`, `core_series`, `core_floor`
+
+```toml
+max_stories = 15
+core_series = ["f1", "indycar"]
+core_floor = 6
+```
+
+- **`max_stories`** — the maximum number of stories in a digest.
+- **`core_series` / `core_floor`** — the daily selection reserves a floor of
+  up to `core_floor` slots for the highest-buzz stories from the listed
+  `core_series` IDs, then fills the remaining slots by buzz across *all*
+  followed series, capped at `max_stories`. The floor is a **minimum**
+  guarantee for the core series, not a cap — if core stories are buzzy enough
+  to fill more than `core_floor` slots on their own merit, they can still take
+  more of `max_stories`. This keeps F1/IndyCar coverage from being crowded out
+  on a day when a smaller series has an unusually buzzy story.
+
+### GDELT spike coverage
+
+GDELT's spike signal (`[weights].spike`) is scoped to F1 and IndyCar only.
+Other series (WEC, IMSA, NASCAR, Formula E, and any you add) rank on the
+social and breadth signals alone — spike defaults to a neutral `1.0` for
+them, so it neither helps nor hurts their ranking.
+
+### How to add a new series
+
+No code change is required:
+
+1. Add a `[[series]]` block to `config.toml` with a unique `id`, a display
+   `label`, and distinctive `terms`: the series name, signature events (e.g.
+   a marquee race), and unambiguous driver/team names. **Avoid bare shared
+   manufacturer names** like "Ferrari" or "Porsche" — those manufacturers
+   race across multiple series, and a bare name causes cross-series leakage
+   (a story about one series' Ferrari program getting misclassified into
+   another's digest).
+2. Optionally add a feed (`[[rss_feeds]]` or `[[subreddits]]`) with
+   `series = "<id>"` to force-classify every entry from a dedicated source
+   into that series, bypassing title matching for that source.
+3. If the new series should share in the guaranteed floor, add its `id` to
+   `core_series`.
 
 ## Run
 

@@ -11,7 +11,7 @@ from digest.collect.reddit import fetch_reddit
 from digest.collect.rss import fetch_rss
 from digest.config import Config, load_config
 from digest.email import render_html, render_subject, send_email
-from digest.gate import filter_stories
+from digest.gate import filter_stories, select_digest
 from digest.pipeline import score_pool
 from digest.state import StateStore
 from digest.summarize import summarize
@@ -22,7 +22,7 @@ def _collect(cfg, since, end):
     items = []
     items += fetch_rss(cfg.rss_feeds, since)
 
-    gdelt_items, spikes = fetch_gdelt(cfg.keywords, since, end)
+    gdelt_items, spikes = fetch_gdelt(cfg.series, since, end)
     items += gdelt_items
 
     items += _collect_reddit(cfg)
@@ -44,9 +44,11 @@ def _collect_reddit(cfg):
         print("[reddit] no credentials configured — skipping")
         return []
 
-    reddit = praw.Reddit(client_id=cfg.reddit_client_id,
-                         client_secret=cfg.reddit_client_secret,
-                         user_agent=cfg.reddit_user_agent)
+    reddit = praw.Reddit(
+        client_id=cfg.reddit_client_id,
+        client_secret=cfg.reddit_client_secret,
+        user_agent=cfg.reddit_user_agent,
+    )
     return fetch_reddit(reddit, cfg.subreddits)
 
 
@@ -60,7 +62,7 @@ def _bluesky_client(cfg: Config) -> bluesky.BlueskyClient | None:
         return None
     try:
         return bluesky.BlueskyClient(cfg.bsky_handle, cfg.bsky_app_password)
-    except Exception as exc:                        # noqa: BLE001 — degrade, never crash the run
+    except Exception as exc:  # noqa: BLE001 — degrade, never crash the run
         print(f"[bluesky] auth failed: {exc} — skipping")
         return None
 
@@ -75,22 +77,31 @@ def run(config_path: str | None, dry_run: bool) -> None:
         raw, spikes = _collect(cfg, since, end)
         client_bsky = _bluesky_client(cfg)
         enrich = (lambda stories: bluesky.enrich(stories, client_bsky)) if client_bsky else None
-        scored = score_pool(raw, spikes, cfg, enrich=enrich)          # full pre-gate pool, sorted desc
+        scored = score_pool(raw, spikes, cfg, enrich=enrich)  # full pre-gate pool, sorted desc
         survivors = filter_stories(
-            scored, state,
-            threshold=cfg.threshold, calibration=cfg.calibration,
-            suppress_days=cfg.suppress_days, escalation_factor=cfg.escalation_factor,
+            scored,
+            state,
+            threshold=cfg.threshold,
+            calibration=cfg.calibration,
+            suppress_days=cfg.suppress_days,
+            escalation_factor=cfg.escalation_factor,
         )
-        top = survivors[: cfg.max_stories]
+        top = select_digest(
+            survivors,
+            max_stories=cfg.max_stories,
+            core_series=set(cfg.core_series),
+            core_floor=cfg.core_floor,
+        )
 
         if cfg.calibration and scored:
-            print("[calibration] day's scores: "
-                  + ", ".join(f"{s.buzz:.3f}" for s in scored[:20]))
+            print("[calibration] day's scores: " + ", ".join(f"{s.buzz:.3f}" for s in scored[:20]))
 
         if not top:
-            print(f"[digest] nothing cleared the gate (top buzz {scored[0].buzz:.3f} "
-                  f"of {len(scored)} scored) — no email sent" if scored
-                  else "[digest] no stories at all — no email sent")
+            print(
+                f"[digest] nothing cleared the gate (top buzz {scored[0].buzz:.3f} of {len(scored)} scored) — no email sent"
+                if scored
+                else "[digest] no stories at all — no email sent"
+            )
             return
 
         if dry_run:
@@ -115,10 +126,13 @@ def run(config_path: str | None, dry_run: bool) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="F1/IndyCar morning buzz digest")
+    parser = argparse.ArgumentParser(description="Motorsports morning buzz digest")
     parser.add_argument("--config", default=None, help="path to config.toml")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="rank and print, but don't summarize or send")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="rank and print, but don't summarize or send",
+    )
     args = parser.parse_args()
     run(args.config, args.dry_run)
 

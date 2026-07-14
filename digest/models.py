@@ -2,24 +2,35 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 
+@dataclass(frozen=True)
+class SeriesDef:
+    """One followed motorsport series and the title terms that identify it."""
+
+    id: str  # lowercase slug: "f1", "wec", ...
+    label: str  # display name: "Formula 1", "WEC"
+    terms: tuple[str, ...]  # distinctive identifiers; substring-matched
+
+
 @dataclass
 class RawItem:
     """A single item from one source before clustering."""
-    source: str                       # "rss" | "gdelt" | "reddit"
+
+    source: str  # "rss" | "gdelt" | "reddit"
     url: str
     title: str
     domain: str = ""
     published_at: datetime | None = None
     reddit_score: int = 0
     reddit_comments: int = 0
-    series: str = ""                  # "f1" | "indycar" | ""
+    series: str = ""  # a followed series id, or "" (RawItem, pre-classification)
     extra: dict = field(default_factory=dict)
 
 
 @dataclass
 class Story:
     """A cluster of RawItems referring to the same event across sources."""
-    key: str                          # canonical url + title hash
+
+    key: str  # canonical url + title hash
     canonical_url: str
     title: str
     series: str

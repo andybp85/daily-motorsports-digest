@@ -97,3 +97,11 @@ def test_normalize_drops_bare_ambiguous_manufacturer():
 def test_normalize_trusts_source_series_feed():
     out = normalize_items([_rss("Grosjean signs multi-year deal", series="indycar")], REGISTRY)
     assert len(out) == 1 and out[0].series == "indycar"
+
+
+def test_normalize_ignores_unfollowed_source_series_hint():
+    # A feed misconfigured with an unfollowed series id (e.g. MotoGP, which
+    # isn't in REGISTRY) must not bypass the relevance gate via the hint —
+    # the title has no followed-series term either, so it's dropped.
+    out = normalize_items([_rss("Vinales: 'KTM sent me a contract'", series="motogp")], REGISTRY)
+    assert out == []

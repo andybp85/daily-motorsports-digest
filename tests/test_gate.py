@@ -99,6 +99,20 @@ def test_select_high_buzz_core_may_exceed_floor():
 
 
 def test_select_caps_at_max_stories():
-    survivors = [_scored_series(f"s{i}", 1.0 - i / 100, "nascar") for i in range(20)]
+    # 20 candidates (exceeds max_stories=15), mixing core and non-core series.
+    # The 6 core stories (== core_floor) all sit inside indices 0-10, i.e.
+    # already within the top 15 by buzz — so the core floor and a pure
+    # buzz-ranked top-15 agree, making the expected result unambiguous: the
+    # top 15 by buzz, in buzz-descending order.
+    core_ids = {0, 2, 4, 6, 8, 10}
+    survivors = [
+        _scored_series(
+            f"s{i}",
+            1.0 - i / 100,
+            ("f1", "indycar")[i % 2] if i in core_ids else ("nascar", "wec", "imsa")[i % 3],
+        )
+        for i in range(20)
+    ]
     out = select_digest(survivors, max_stories=15, core_series=CORE, core_floor=6)
-    assert len(out) == 15
+    assert [s.story.key for s in out] == [f"s{i}" for i in range(15)]
+    assert [s.buzz for s in out] == sorted((s.buzz for s in out), reverse=True)

@@ -126,7 +126,7 @@ def run(config_path: str | None, dry_run: bool) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="F1/IndyCar morning buzz digest")
+    parser = argparse.ArgumentParser(description="Motorsports morning buzz digest")
     parser.add_argument("--config", default=None, help="path to config.toml")
     parser.add_argument(
         "--dry-run",

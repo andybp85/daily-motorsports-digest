@@ -35,8 +35,12 @@ def classify_series(title: str, source_series: str, registry: tuple[SeriesDef, .
     Registry order is priority: a title matching two series resolves to the
     earlier one (the core series lead), so shared driver/manufacturer names
     fall to F1/IndyCar rather than an endurance series.
+
+    The source hint is honored only when it names a followed series; a feed
+    misconfigured with an unfollowed series id must not bypass the relevance
+    gate, so it falls through to title-based classification instead.
     """
-    if source_series:
+    if source_series and any(s.id == source_series for s in registry):
         return source_series
     low = title.lower()
     for series in registry:

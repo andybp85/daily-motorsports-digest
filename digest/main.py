@@ -11,7 +11,7 @@ from digest.collect.reddit import fetch_reddit
 from digest.collect.rss import fetch_rss
 from digest.config import Config, load_config
 from digest.email import render_html, render_subject, send_email
-from digest.gate import filter_stories
+from digest.gate import filter_stories, select_digest
 from digest.pipeline import score_pool
 from digest.state import StateStore
 from digest.summarize import summarize
@@ -86,7 +86,12 @@ def run(config_path: str | None, dry_run: bool) -> None:
             suppress_days=cfg.suppress_days,
             escalation_factor=cfg.escalation_factor,
         )
-        top = survivors[: cfg.max_stories]
+        top = select_digest(
+            survivors,
+            max_stories=cfg.max_stories,
+            core_series=set(cfg.core_series),
+            core_floor=cfg.core_floor,
+        )
 
         if cfg.calibration and scored:
             print("[calibration] day's scores: " + ", ".join(f"{s.buzz:.3f}" for s in scored[:20]))

@@ -2,6 +2,8 @@ import os
 import tomllib
 from dataclasses import dataclass, field
 
+from digest.models import SeriesDef
+
 
 @dataclass
 class Config:
@@ -12,15 +14,20 @@ class Config:
     escalation_factor: float = 1.5
     db_path: str = "state.db"
     timezone: str = "America/New_York"
-    max_stories: int = 8
+    max_stories: int = 15
     reddit_enabled: bool = True
-    weights: dict = field(default_factory=lambda: {"social": 0.5, "breadth": 0.35, "spike": 0.15})
+    weights: dict = field(
+        default_factory=lambda: {"social": 0.5, "breadth": 0.35, "spike": 0.15}
+    )
     ses_sender: str = ""
     ses_recipient: str = ""
     aws_region: str = "us-east-1"
     rss_feeds: list = field(default_factory=list)
     subreddits: list = field(default_factory=list)
     keywords: dict = field(default_factory=dict)
+    series: tuple[SeriesDef, ...] = ()
+    core_series: list[str] = field(default_factory=lambda: ["f1", "indycar"])
+    core_floor: int = 6
     # Secrets (from env)
     reddit_client_id: str = ""
     reddit_client_secret: str = ""
@@ -31,11 +38,31 @@ class Config:
     bsky_app_password: str = ""
 
 
+def _parse_series(raw: list[dict]) -> tuple[SeriesDef, ...]:
+    """Build the series registry from [[series]] blocks, preserving order."""
+    return tuple(
+        SeriesDef(id=b["id"], label=b["label"], terms=tuple(b["terms"])) for b in raw
+    )
+
+
 def load_config(path: str | None = None) -> Config:
     """Load config from a TOML file (path or ./config.toml) plus secrets from env."""
     path = path or "config.toml"
     with open(path, "rb") as fh:
         data = tomllib.load(fh)
+
+    series = _parse_series(data.get("series", []))
+    core_series = data.get("core_series", ["f1", "indycar"])
+    core_floor = int(data.get("core_floor", 6))
+
+    max_stories = int(data.get("max_stories", 15))
+    core_floor = min(core_floor, max_stories)  # floor can't exceed the cap
+
+    if series:  # validate only once populated
+        known = {s.id for s in series}
+        unknown = [c for c in core_series if c not in known]
+        if unknown:
+            raise ValueError(f"core_series references unknown series id(s): {unknown}")
 
     ses = data.get("ses", {})
     cfg = Config(
@@ -46,7 +73,7 @@ def load_config(path: str | None = None) -> Config:
         escalation_factor=float(data.get("escalation_factor", 1.5)),
         db_path=data.get("db_path", "state.db"),
         timezone=data.get("timezone", "America/New_York"),
-        max_stories=int(data.get("max_stories", 8)),
+        max_stories=max_stories,
         reddit_enabled=bool(data.get("reddit_enabled", True)),
         weights=data.get("weights", {"social": 0.5, "breadth": 0.35, "spike": 0.15}),
         ses_sender=ses.get("sender", ""),
@@ -55,6 +82,9 @@ def load_config(path: str | None = None) -> Config:
         rss_feeds=data.get("rss_feeds", []),
         subreddits=data.get("subreddits", []),
         keywords=data.get("keywords", {}),
+        series=series,
+        core_series=core_series,
+        core_floor=core_floor,
         reddit_client_id=os.environ.get("REDDIT_CLIENT_ID", ""),
         reddit_client_secret=os.environ.get("REDDIT_CLIENT_SECRET", ""),
         reddit_user_agent=os.environ.get("REDDIT_USER_AGENT", ""),

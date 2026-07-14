@@ -6,7 +6,9 @@ suppress_days = 3
 escalation_factor = 1.5
 db_path = "state.db"
 timezone = "America/New_York"
-max_stories = 8
+max_stories = 15
+core_series = ["f1", "indycar"]   # guaranteed floor of slots for these
+core_floor = 6
 
 # Reddit is an optional ranking signal. As of late 2025 Reddit gates new API
 # tokens behind manual approval (Responsible Builder Policy), so self-serve app
@@ -52,17 +54,38 @@ series = "f1"
 name = "IndyCar"
 series = "indycar"
 
-[keywords]
-series_f1 = ["Formula 1", "Formula One", "F1", "Grand Prix"]
-series_indycar = ["IndyCar", "IndyCar Series", "Indy 500", "Indianapolis 500"]
-teams = ["Red Bull", "Ferrari", "Mercedes", "McLaren", "Aston Martin",
-         "Alpine", "Williams", "Racing Bulls", "Sauber", "Haas",
-         "Penske", "Ganassi", "Andretti", "Arrow McLaren", "Rahal"]
-drivers = ["Verstappen", "Hamilton", "Norris", "Leclerc", "Russell",
-           "Piastri", "Sainz", "Alonso", "Palou", "Newgarden",
-           "Dixon", "Herta", "O'Ward", "Power", "Rossi"]
-# Anchors only gate a bare driver surname (driver + anchor = keep), so short
-# session words are safe here. "GP" abbreviates "Grand Prix"; kept out of the
-# series lists because those feed the GDELT query, where "GP" is too broad.
-anchors = ["Formula 1", "F1", "IndyCar", "Grand Prix", "GP", "racing",
-           "motorsport", "qualifying", "practice", "sprint", "podium", "circuit"]
+[[series]]
+id = "f1"
+label = "Formula 1"
+terms = ["Formula 1", "Formula One", "F1", "Grand Prix",
+         "Verstappen", "Hamilton", "Norris", "Leclerc", "Russell",
+         "Piastri", "Alonso", "Red Bull Racing", "Scuderia Ferrari"]
+
+[[series]]
+id = "indycar"
+label = "IndyCar"
+terms = ["IndyCar", "Indy 500", "Indianapolis 500",
+         "Palou", "Newgarden", "Dixon", "Herta", "O'Ward", "Penske", "Ganassi"]
+
+[[series]]
+id = "wec"
+label = "WEC"
+terms = ["WEC", "World Endurance", "Le Mans", "Hypercar", "LMGT3",
+         "6 Hours of", "499P", "Toyota Gazoo", "Peugeot 9X8"]
+
+[[series]]
+id = "imsa"
+label = "IMSA"
+terms = ["IMSA", "WeatherTech", "GTP", "Rolex 24", "Daytona 24",
+         "Sebring", "Petit Le Mans"]
+
+[[series]]
+id = "nascar"
+label = "NASCAR"
+terms = ["NASCAR", "Cup Series", "Xfinity", "Craftsman Truck",
+         "Daytona 500", "Talladega", "Bristol", "Larson", "Elliott"]
+
+[[series]]
+id = "formulae"
+label = "Formula E"
+terms = ["Formula E", "E-Prix", "Gen3", "ABB FIA"]

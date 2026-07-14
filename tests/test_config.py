@@ -136,3 +136,11 @@ def test_load_config_rejects_unknown_core_series_id(tmp_path):
     )
     with pytest.raises(ValueError, match="core_series"):
         load_config(str(cfg_file))
+
+
+def test_real_config_toml_has_series_registry():
+    cfg = load_config("config.toml")
+    ids = {s.id for s in cfg.series}
+    assert {"f1", "indycar", "wec", "imsa", "nascar", "formulae"} <= ids
+    assert cfg.max_stories == 15
+    assert set(cfg.core_series) == {"f1", "indycar"}

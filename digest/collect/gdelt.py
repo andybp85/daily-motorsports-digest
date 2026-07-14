@@ -4,7 +4,7 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 
-from digest.models import RawItem
+from digest.models import RawItem, SeriesDef
 from digest.normalize import is_relevant
 
 _GDELT_CALL_TIMEOUT_S = 30.0
@@ -55,7 +55,9 @@ def _prefer_ipv4():
     resolve = socket.getaddrinfo
 
     def ipv4_first(*args: object, **kwargs: object) -> list:
-        return sorted(resolve(*args, **kwargs), key=lambda row: row[0] != socket.AF_INET)
+        return sorted(
+            resolve(*args, **kwargs), key=lambda row: row[0] != socket.AF_INET
+        )
 
     socket.getaddrinfo = ipv4_first
     try:
@@ -64,24 +66,26 @@ def _prefer_ipv4():
         socket.getaddrinfo = resolve
 
 
-def build_keyword_list(keywords: dict, kind: str) -> list[str]:
-    """Series terms only, scoped to one series ('f1' or 'indycar').
+def build_keyword_list(registry: tuple[SeriesDef, ...], kind: str) -> list[str]:
+    """The terms for one series id ('f1' | 'indycar'), or [] if not followed.
 
-    Deliberately short: GDELT rejects an over-long keyword query ("query too
-    short or too long"), and the full team/driver/anchor set would blow that
-    limit. Series terms are broad enough to pull the candidate articles; the
-    fine-grained team/driver filtering happens downstream in is_relevant().
+    Deliberately short: GDELT rejects an over-long keyword query, so we send one
+    series' identifying terms and let is_relevant() do fine filtering downstream.
     """
-    series_key = "series_f1" if kind == "f1" else "series_indycar"
-    return list(keywords.get(series_key, []))
+    for series in registry:
+        if series.id == kind:
+            return list(series.terms)
+    return []
 
 
-def parse_articles(rows: list[dict], keywords: dict, series: str = "") -> list[RawItem]:
+def parse_articles(
+    rows: list[dict], registry: tuple[SeriesDef, ...], series: str = ""
+) -> list[RawItem]:
     """Convert GDELT article rows into relevant RawItems."""
     items = []
     for row in rows:
         title = row.get("title", "")
-        if not is_relevant(title, keywords):
+        if not is_relevant(title, registry):
             continue
         items.append(
             RawItem(
@@ -139,7 +143,7 @@ def _search_with_retry(
 
 
 def fetch_gdelt(
-    keywords: dict,
+    registry: tuple[SeriesDef, ...],
     since: datetime,
     end: datetime,
     client=None,
@@ -162,14 +166,14 @@ def fetch_gdelt(
     for kind in ("f1", "indycar"):
         try:
             filt = Filters(
-                keyword=build_keyword_list(keywords, kind),
+                keyword=build_keyword_list(registry, kind),
                 start_date=start_s,
                 end_date=end_s,
                 num_records=250,
             )
             df = _search_with_retry(lambda: gd.article_search(filt), timeout=timeout)
             rows = df.to_dict("records") if df is not None and not df.empty else []
-            articles.extend(parse_articles(rows, keywords, series=kind))
+            articles.extend(parse_articles(rows, registry, series=kind))
 
             tl = _search_with_retry(
                 lambda: gd.timeline_search("timelinevol", filt), timeout=timeout

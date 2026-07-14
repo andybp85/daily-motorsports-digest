@@ -9,23 +9,22 @@ from digest.collect.gdelt import (
     parse_articles,
     spike_ratio,
 )
+from digest.models import SeriesDef
 
-KEYWORDS = {
-    "series_f1": ["Formula 1", "F1", "Grand Prix"],
-    "series_indycar": ["IndyCar", "Indy 500"],
-    "teams": ["Ferrari", "Penske"],
-    "drivers": ["Verstappen", "Russell", "Palou"],
-    "anchors": ["F1", "IndyCar", "racing", "Grand Prix"],
-}
+REGISTRY = (
+    SeriesDef(
+        id="f1",
+        label="Formula 1",
+        terms=("Formula 1", "F1", "Grand Prix", "Verstappen"),
+    ),
+    SeriesDef(id="indycar", label="IndyCar", terms=("IndyCar", "Indy 500", "Palou")),
+)
 
 
 def test_build_keyword_list_scopes_to_series():
-    f1 = build_keyword_list(KEYWORDS, "f1")
-    assert set(f1) == {"Formula 1", "F1", "Grand Prix"}  # series terms only
+    f1 = build_keyword_list(REGISTRY, "f1")
+    assert "F1" in f1 and "Grand Prix" in f1
     assert "Indy 500" not in f1  # not the other series
-    # teams/drivers are NOT in the API query — they'd overflow GDELT's length
-    # limit; is_relevant() applies them downstream instead.
-    assert "Ferrari" not in f1 and "Verstappen" not in f1
 
 
 def test_parse_articles_filters_irrelevant():
@@ -37,11 +36,11 @@ def test_parse_articles_filters_irrelevant():
         },
         {
             "url": "https://b.com/2",
-            "title": "Local news about a person named Norris",
+            "title": "Local news about a person named Smith",
             "domain": "b.com",
         },
     ]
-    items = parse_articles(rows, KEYWORDS)
+    items = parse_articles(rows, REGISTRY)
     assert [i.url for i in items] == ["https://a.com/1"]
     assert items[0].source == "gdelt"
 
@@ -54,7 +53,7 @@ def test_parse_articles_tags_series():
             "domain": "a.com",
         }
     ]
-    items = parse_articles(rows, KEYWORDS, series="f1")
+    items = parse_articles(rows, REGISTRY, series="f1")
     assert items[0].series == "f1"
 
 
@@ -77,7 +76,7 @@ def test_fetch_gdelt_survives_a_hanging_search():
     since, end = datetime(2026, 7, 10), datetime(2026, 7, 11)
 
     articles, spikes = fetch_gdelt(
-        KEYWORDS, since, end, client=_HangingGdelt(), timeout=0.2
+        REGISTRY, since, end, client=_HangingGdelt(), timeout=0.2
     )
 
     assert articles == []  # nothing collected on timeout
@@ -101,6 +100,7 @@ def test_prefer_ipv4_orders_ipv4_first(monkeypatch):
 
 def test_prefer_ipv4_restores_resolver(monkeypatch):
     """The patch is scoped — the original resolver returns after the block."""
+
     def original(*_args, **_kwargs):
         return ["sentinel"]
 

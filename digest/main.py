@@ -22,7 +22,7 @@ def _collect(cfg, since, end):
     items = []
     items += fetch_rss(cfg.rss_feeds, since)
 
-    gdelt_items, spikes = fetch_gdelt(cfg.keywords, since, end)
+    gdelt_items, spikes = fetch_gdelt(cfg.series, since, end)
     items += gdelt_items
 
     items += _collect_reddit(cfg)
@@ -40,13 +40,17 @@ def _collect_reddit(cfg):
     if not cfg.reddit_enabled:
         print("[reddit] disabled via config (reddit_enabled = false) — skipping")
         return []
-    if not (cfg.reddit_client_id and cfg.reddit_client_secret and cfg.reddit_user_agent):
+    if not (
+        cfg.reddit_client_id and cfg.reddit_client_secret and cfg.reddit_user_agent
+    ):
         print("[reddit] no credentials configured — skipping")
         return []
 
-    reddit = praw.Reddit(client_id=cfg.reddit_client_id,
-                         client_secret=cfg.reddit_client_secret,
-                         user_agent=cfg.reddit_user_agent)
+    reddit = praw.Reddit(
+        client_id=cfg.reddit_client_id,
+        client_secret=cfg.reddit_client_secret,
+        user_agent=cfg.reddit_user_agent,
+    )
     return fetch_reddit(reddit, cfg.subreddits)
 
 
@@ -60,7 +64,7 @@ def _bluesky_client(cfg: Config) -> bluesky.BlueskyClient | None:
         return None
     try:
         return bluesky.BlueskyClient(cfg.bsky_handle, cfg.bsky_app_password)
-    except Exception as exc:                        # noqa: BLE001 — degrade, never crash the run
+    except Exception as exc:  # noqa: BLE001 — degrade, never crash the run
         print(f"[bluesky] auth failed: {exc} — skipping")
         return None
 
@@ -74,29 +78,45 @@ def run(config_path: str | None, dry_run: bool) -> None:
     try:
         raw, spikes = _collect(cfg, since, end)
         client_bsky = _bluesky_client(cfg)
-        enrich = (lambda stories: bluesky.enrich(stories, client_bsky)) if client_bsky else None
-        scored = score_pool(raw, spikes, cfg, enrich=enrich)          # full pre-gate pool, sorted desc
+        enrich = (
+            (lambda stories: bluesky.enrich(stories, client_bsky))
+            if client_bsky
+            else None
+        )
+        scored = score_pool(
+            raw, spikes, cfg, enrich=enrich
+        )  # full pre-gate pool, sorted desc
         survivors = filter_stories(
-            scored, state,
-            threshold=cfg.threshold, calibration=cfg.calibration,
-            suppress_days=cfg.suppress_days, escalation_factor=cfg.escalation_factor,
+            scored,
+            state,
+            threshold=cfg.threshold,
+            calibration=cfg.calibration,
+            suppress_days=cfg.suppress_days,
+            escalation_factor=cfg.escalation_factor,
         )
         top = survivors[: cfg.max_stories]
 
         if cfg.calibration and scored:
-            print("[calibration] day's scores: "
-                  + ", ".join(f"{s.buzz:.3f}" for s in scored[:20]))
+            print(
+                "[calibration] day's scores: "
+                + ", ".join(f"{s.buzz:.3f}" for s in scored[:20])
+            )
 
         if not top:
-            print(f"[digest] nothing cleared the gate (top buzz {scored[0].buzz:.3f} "
-                  f"of {len(scored)} scored) — no email sent" if scored
-                  else "[digest] no stories at all — no email sent")
+            print(
+                f"[digest] nothing cleared the gate (top buzz {scored[0].buzz:.3f} "
+                f"of {len(scored)} scored) — no email sent"
+                if scored
+                else "[digest] no stories at all — no email sent"
+            )
             return
 
         if dry_run:
             print(f"[dry-run] {len(top)} stories would be sent:")
             for n, s in enumerate(top, 1):
-                print(f"  {n}. [{s.buzz:.3f}] {s.story.title}  ({len(s.story.domains)} outlets)")
+                print(
+                    f"  {n}. [{s.buzz:.3f}] {s.story.title}  ({len(s.story.domains)} outlets)"
+                )
             return
 
         client = anthropic.Anthropic(api_key=cfg.anthropic_api_key)
@@ -117,8 +137,11 @@ def run(config_path: str | None, dry_run: bool) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="F1/IndyCar morning buzz digest")
     parser.add_argument("--config", default=None, help="path to config.toml")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="rank and print, but don't summarize or send")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="rank and print, but don't summarize or send",
+    )
     args = parser.parse_args()
     run(args.config, args.dry_run)
 

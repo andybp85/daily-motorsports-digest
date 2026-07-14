@@ -34,13 +34,6 @@ def test_load_config_reads_toml_and_env(tmp_path, monkeypatch):
         [[subreddits]]
         name = "formula1"
         series = "f1"
-
-        [keywords]
-        series_f1 = ["F1"]
-        series_indycar = ["IndyCar"]
-        teams = ["Ferrari"]
-        drivers = ["Verstappen"]
-        anchors = ["racing"]
     """)
     )
     monkeypatch.setenv("REDDIT_CLIENT_ID", "cid")
@@ -58,7 +51,6 @@ def test_load_config_reads_toml_and_env(tmp_path, monkeypatch):
     assert cfg.anthropic_api_key == "sk-ant"
     assert cfg.rss_feeds[0]["series"] == "indycar"
     assert cfg.subreddits[0]["name"] == "formula1"
-    assert "Verstappen" in cfg.keywords["drivers"]
 
 
 def test_load_config_reads_bluesky(tmp_path, monkeypatch):

@@ -24,7 +24,6 @@ class Config:
     aws_region: str = "us-east-1"
     rss_feeds: list = field(default_factory=list)
     subreddits: list = field(default_factory=list)
-    keywords: dict = field(default_factory=dict)
     series: tuple[SeriesDef, ...] = ()
     core_series: list[str] = field(default_factory=lambda: ["f1", "indycar"])
     core_floor: int = 6
@@ -81,7 +80,6 @@ def load_config(path: str | None = None) -> Config:
         aws_region=ses.get("aws_region", "us-east-1"),
         rss_feeds=data.get("rss_feeds", []),
         subreddits=data.get("subreddits", []),
-        keywords=data.get("keywords", {}),
         series=series,
         core_series=core_series,
         core_floor=core_floor,

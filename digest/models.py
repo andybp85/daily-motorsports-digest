@@ -22,7 +22,7 @@ class RawItem:
     published_at: datetime | None = None
     reddit_score: int = 0
     reddit_comments: int = 0
-    series: str = ""  # "f1" | "indycar" | ""
+    series: str = ""  # a followed series id, or "" (RawItem, pre-classification)
     extra: dict = field(default_factory=dict)
 
 

@@ -63,16 +63,12 @@ def test_is_relevant_keeps_classified_story():
 
 
 def test_is_relevant_rejects_unclassifiable_story():
-    assert (
-        is_relevant("Alex Palou opens a coffee shop", REGISTRY) is True
-    )  # 'Palou' term
+    assert is_relevant("Alex Palou opens a coffee shop", REGISTRY) is True  # 'Palou' term
     assert is_relevant("Local council debates parking", REGISTRY) is False
 
 
 def _rss(title: str, series: str = "") -> RawItem:
-    return RawItem(
-        source="rss", url="https://motorsport.com/x", title=title, series=series
-    )
+    return RawItem(source="rss", url="https://motorsport.com/x", title=title, series=series)
 
 
 def test_normalize_drops_off_topic_series():
@@ -95,14 +91,9 @@ def test_normalize_drops_bare_ambiguous_manufacturer():
     # Note: "road-going supercar", not "hypercar" — "Hypercar" is itself a WEC
     # registry term, so that word would (correctly) classify as wec and defeat
     # the point of this test.
-    assert (
-        normalize_items([_rss("Ferrari unveils new road-going supercar")], REGISTRY)
-        == []
-    )
+    assert normalize_items([_rss("Ferrari unveils new road-going supercar")], REGISTRY) == []
 
 
 def test_normalize_trusts_source_series_feed():
-    out = normalize_items(
-        [_rss("Grosjean signs multi-year deal", series="indycar")], REGISTRY
-    )
+    out = normalize_items([_rss("Grosjean signs multi-year deal", series="indycar")], REGISTRY)
     assert len(out) == 1 and out[0].series == "indycar"

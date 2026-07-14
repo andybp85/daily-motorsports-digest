@@ -75,9 +75,7 @@ def test_fetch_gdelt_survives_a_hanging_search():
     """
     since, end = datetime(2026, 7, 10), datetime(2026, 7, 11)
 
-    articles, spikes = fetch_gdelt(
-        REGISTRY, since, end, client=_HangingGdelt(), timeout=0.2
-    )
+    articles, spikes = fetch_gdelt(REGISTRY, since, end, client=_HangingGdelt(), timeout=0.2)
 
     assert articles == []  # nothing collected on timeout
     assert spikes == {"f1": 1.0, "indycar": 1.0}  # spikes fall back to neutral

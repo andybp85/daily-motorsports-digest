@@ -22,9 +22,7 @@ def score_pool(
     return score_stories(stories, series_spike, cfg.weights)
 
 
-def rank(
-    raw_items: list[RawItem], series_spike: dict[str, float], state, cfg: Config
-) -> list[ScoredStory]:
+def rank(raw_items: list[RawItem], series_spike: dict[str, float], state, cfg: Config) -> list[ScoredStory]:
     """score_pool → gate. Returns surviving scored stories."""
     scored = score_pool(raw_items, series_spike, cfg)
     return filter_stories(

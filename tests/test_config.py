@@ -68,9 +68,7 @@ def test_load_config_reads_bluesky(tmp_path, monkeypatch):
 
 def test_load_config_defaults_when_calibration_true(tmp_path):
     cfg_file = tmp_path / "config.toml"
-    cfg_file.write_text(
-        'calibration = true\n[ses]\nsender="a"\nrecipient="b"\naws_region="us-east-1"\n'
-    )
+    cfg_file.write_text('calibration = true\n[ses]\nsender="a"\nrecipient="b"\naws_region="us-east-1"\n')
     cfg = load_config(str(cfg_file))
     assert cfg.calibration is True
     assert cfg.model == "claude-haiku-4-5"  # default
@@ -101,9 +99,7 @@ def test_load_config_parses_series_registry(tmp_path):
     assert cfg.core_series == ["f1", "wec"]
     assert cfg.core_floor == 6
     assert [s.id for s in cfg.series] == ["f1", "wec"]
-    assert cfg.series[0] == SeriesDef(
-        id="f1", label="Formula 1", terms=("F1", "Grand Prix", "Verstappen")
-    )
+    assert cfg.series[0] == SeriesDef(id="f1", label="Formula 1", terms=("F1", "Grand Prix", "Verstappen"))
 
 
 def test_load_config_clamps_core_floor_to_max_stories(tmp_path):

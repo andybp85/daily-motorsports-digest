@@ -40,9 +40,7 @@ def _collect_reddit(cfg):
     if not cfg.reddit_enabled:
         print("[reddit] disabled via config (reddit_enabled = false) — skipping")
         return []
-    if not (
-        cfg.reddit_client_id and cfg.reddit_client_secret and cfg.reddit_user_agent
-    ):
+    if not (cfg.reddit_client_id and cfg.reddit_client_secret and cfg.reddit_user_agent):
         print("[reddit] no credentials configured — skipping")
         return []
 
@@ -78,14 +76,8 @@ def run(config_path: str | None, dry_run: bool) -> None:
     try:
         raw, spikes = _collect(cfg, since, end)
         client_bsky = _bluesky_client(cfg)
-        enrich = (
-            (lambda stories: bluesky.enrich(stories, client_bsky))
-            if client_bsky
-            else None
-        )
-        scored = score_pool(
-            raw, spikes, cfg, enrich=enrich
-        )  # full pre-gate pool, sorted desc
+        enrich = (lambda stories: bluesky.enrich(stories, client_bsky)) if client_bsky else None
+        scored = score_pool(raw, spikes, cfg, enrich=enrich)  # full pre-gate pool, sorted desc
         survivors = filter_stories(
             scored,
             state,
@@ -97,15 +89,11 @@ def run(config_path: str | None, dry_run: bool) -> None:
         top = survivors[: cfg.max_stories]
 
         if cfg.calibration and scored:
-            print(
-                "[calibration] day's scores: "
-                + ", ".join(f"{s.buzz:.3f}" for s in scored[:20])
-            )
+            print("[calibration] day's scores: " + ", ".join(f"{s.buzz:.3f}" for s in scored[:20]))
 
         if not top:
             print(
-                f"[digest] nothing cleared the gate (top buzz {scored[0].buzz:.3f} "
-                f"of {len(scored)} scored) — no email sent"
+                f"[digest] nothing cleared the gate (top buzz {scored[0].buzz:.3f} of {len(scored)} scored) — no email sent"
                 if scored
                 else "[digest] no stories at all — no email sent"
             )
@@ -114,9 +102,7 @@ def run(config_path: str | None, dry_run: bool) -> None:
         if dry_run:
             print(f"[dry-run] {len(top)} stories would be sent:")
             for n, s in enumerate(top, 1):
-                print(
-                    f"  {n}. [{s.buzz:.3f}] {s.story.title}  ({len(s.story.domains)} outlets)"
-                )
+                print(f"  {n}. [{s.buzz:.3f}] {s.story.title}  ({len(s.story.domains)} outlets)")
             return
 
         client = anthropic.Anthropic(api_key=cfg.anthropic_api_key)

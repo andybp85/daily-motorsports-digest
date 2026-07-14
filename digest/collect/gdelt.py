@@ -55,9 +55,7 @@ def _prefer_ipv4():
     resolve = socket.getaddrinfo
 
     def ipv4_first(*args: object, **kwargs: object) -> list:
-        return sorted(
-            resolve(*args, **kwargs), key=lambda row: row[0] != socket.AF_INET
-        )
+        return sorted(resolve(*args, **kwargs), key=lambda row: row[0] != socket.AF_INET)
 
     socket.getaddrinfo = ipv4_first
     try:
@@ -78,9 +76,7 @@ def build_keyword_list(registry: tuple[SeriesDef, ...], kind: str) -> list[str]:
     return []
 
 
-def parse_articles(
-    rows: list[dict], registry: tuple[SeriesDef, ...], series: str = ""
-) -> list[RawItem]:
+def parse_articles(rows: list[dict], registry: tuple[SeriesDef, ...], series: str = "") -> list[RawItem]:
     """Convert GDELT article rows into relevant RawItems."""
     items = []
     for row in rows:
@@ -148,7 +144,7 @@ def fetch_gdelt(
     end: datetime,
     client=None,
     timeout: float = _GDELT_CALL_TIMEOUT_S,
-):
+) -> tuple[list[RawItem], dict[str, float]]:
     """Return (articles, {'f1': ratio, 'indycar': ratio}). Thin glue over the pure helpers.
 
     Each GDELT call is capped at `timeout` seconds so a stalled endpoint can't
@@ -175,9 +171,7 @@ def fetch_gdelt(
             rows = df.to_dict("records") if df is not None and not df.empty else []
             articles.extend(parse_articles(rows, registry, series=kind))
 
-            tl = _search_with_retry(
-                lambda: gd.timeline_search("timelinevol", filt), timeout=timeout
-            )
+            tl = _search_with_retry(lambda: gd.timeline_search("timelinevol", filt), timeout=timeout)
             vols = tl.iloc[:, -1].tolist() if tl is not None and not tl.empty else []
             spikes[kind] = spike_ratio([float(v) for v in vols])
         except Exception as exc:  # noqa: BLE001 — one series must not kill the run

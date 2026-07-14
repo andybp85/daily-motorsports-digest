@@ -23,19 +23,13 @@ def canonicalize_url(url: str) -> str:
     if path.endswith("/") and path != "/":
         path = path.rstrip("/")
 
-    kept = [
-        (k, v)
-        for k, v in parse_qsl(parsed.query)
-        if not k.startswith(_TRACKING_PREFIXES) and k not in _TRACKING_KEYS
-    ]
+    kept = [(k, v) for k, v in parse_qsl(parsed.query) if not k.startswith(_TRACKING_PREFIXES) and k not in _TRACKING_KEYS]
     query = urlencode(kept)
 
     return urlunparse((scheme, netloc, path, "", query, ""))
 
 
-def classify_series(
-    title: str, source_series: str, registry: tuple[SeriesDef, ...]
-) -> str:
+def classify_series(title: str, source_series: str, registry: tuple[SeriesDef, ...]) -> str:
     """Return a followed series id, or '' — source hint wins, else first term match.
 
     Registry order is priority: a title matching two series resolves to the
@@ -61,9 +55,7 @@ def is_relevant(title: str, registry: tuple[SeriesDef, ...]) -> bool:
     return classify_series(title, "", registry) != ""
 
 
-def normalize_items(
-    items: list[RawItem], registry: tuple[SeriesDef, ...]
-) -> list[RawItem]:
+def normalize_items(items: list[RawItem], registry: tuple[SeriesDef, ...]) -> list[RawItem]:
     """Return new items with canonical URL, extracted domain, and resolved series.
 
     Drops items that don't classify to a followed series — without this gate the

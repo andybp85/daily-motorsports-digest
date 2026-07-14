@@ -16,9 +16,7 @@ class Config:
     timezone: str = "America/New_York"
     max_stories: int = 15
     reddit_enabled: bool = True
-    weights: dict = field(
-        default_factory=lambda: {"social": 0.5, "breadth": 0.35, "spike": 0.15}
-    )
+    weights: dict = field(default_factory=lambda: {"social": 0.5, "breadth": 0.35, "spike": 0.15})
     ses_sender: str = ""
     ses_recipient: str = ""
     aws_region: str = "us-east-1"
@@ -39,9 +37,7 @@ class Config:
 
 def _parse_series(raw: list[dict]) -> tuple[SeriesDef, ...]:
     """Build the series registry from [[series]] blocks, preserving order."""
-    return tuple(
-        SeriesDef(id=b["id"], label=b["label"], terms=tuple(b["terms"])) for b in raw
-    )
+    return tuple(SeriesDef(id=b["id"], label=b["label"], terms=tuple(b["terms"])) for b in raw)
 
 
 def load_config(path: str | None = None) -> Config:

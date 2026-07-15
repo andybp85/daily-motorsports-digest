@@ -11,6 +11,19 @@ class SeriesDef:
     terms: tuple[str, ...]  # distinctive identifiers; substring-matched
 
 
+@dataclass(frozen=True)
+class Tier:
+    """A priority band of series with a guaranteed floor of digest slots.
+
+    Tiers are applied in order: each reserves up to `floor` of its highest-buzz
+    stories before the remaining slots fill by buzz across everything. A series
+    named in no tier has floor 0 — it competes only in the buzz fill.
+    """
+
+    series: frozenset[str]  # series ids that belong to this tier
+    floor: int  # minimum slots reserved (a minimum, not a cap)
+
+
 @dataclass
 class RawItem:
     """A single item from one source before clustering."""

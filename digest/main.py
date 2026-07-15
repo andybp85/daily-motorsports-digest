@@ -86,12 +86,7 @@ def run(config_path: str | None, dry_run: bool) -> None:
             suppress_days=cfg.suppress_days,
             escalation_factor=cfg.escalation_factor,
         )
-        top = select_digest(
-            survivors,
-            max_stories=cfg.max_stories,
-            core_series=set(cfg.core_series),
-            core_floor=cfg.core_floor,
-        )
+        top = select_digest(survivors, max_stories=cfg.max_stories, tiers=list(cfg.tiers))
 
         if cfg.calibration and scored:
             print("[calibration] day's scores: " + ", ".join(f"{s.buzz:.3f}" for s in scored[:20]))

@@ -63,7 +63,7 @@ label = "IndyCar"
 terms = ["IndyCar", "Indy 500", "Palou", "Newgarden", "Penske", "Ganassi"]
 ```
 
-- **`id`** — lowercase slug, used internally (e.g. as a `core_series` entry or
+- **`id`** — lowercase slug, used internally (e.g. as a `[[tier]]` member or
   a feed's forced `series` value).
 - **`label`** — display name shown in the digest.
 - **`terms`** — list of distinctive title strings. A story is kept only if its
@@ -72,26 +72,41 @@ terms = ["IndyCar", "Indy 500", "Palou", "Newgarden", "Penske", "Ganassi"]
   priority** — the first series whose term matches wins, so put more specific
   series before more general ones when a title could plausibly match both.
 
-See `config.example.toml` for the full registry shipped by default (F1,
-IndyCar, WEC, IMSA, NASCAR, Formula E).
+See `config.example.toml` for the full registry shipped by default: the F1
+feeder ladders (F2, F3, F1 Academy) and Indy NXT lead the list — listed
+before their parent series so a specific hit (e.g. "F1 Academy") wins over the
+parent's broader terms ("F1") — then F1, IndyCar, WEC, IMSA, NASCAR, Formula E.
 
-### Selection: `max_stories`, `core_series`, `core_floor`
+### Selection: `max_stories` and `[[tier]]`
 
 ```toml
 max_stories = 15
-core_series = ["f1", "indycar"]
-core_floor = 6
+
+[[tier]]                                              # 1st priority
+series = ["f1", "indycar"]
+floor = 6
+[[tier]]                                              # 2nd — feeder ladders
+series = ["f2", "f3", "f1academy", "indynxt"]
+floor = 3
+[[tier]]                                              # 3rd
+series = ["wec", "formulae"]
+floor = 2
+[[tier]]                                              # 4th
+series = ["nascar", "imsa"]
+floor = 2
 ```
 
 - **`max_stories`** — the maximum number of stories in a digest.
-- **`core_series` / `core_floor`** — the daily selection reserves a floor of
-  up to `core_floor` slots for the highest-buzz stories from the listed
-  `core_series` IDs, then fills the remaining slots by buzz across *all*
-  followed series, capped at `max_stories`. The floor is a **minimum**
-  guarantee for the core series, not a cap — if core stories are buzzy enough
-  to fill more than `core_floor` slots on their own merit, they can still take
-  more of `max_stories`. This keeps F1/IndyCar coverage from being crowded out
-  on a day when a smaller series has an unusually buzzy story.
+- **`[[tier]]`** — priority bands, applied top-down. Each reserves a floor of
+  up to `floor` slots for the highest-buzz stories from its `series` IDs; once
+  every tier has its floor, the remaining slots fill by buzz across *all*
+  followed series, capped at `max_stories`. A floor is a **minimum**, not a
+  cap — a tier buzzy enough to fill more than its floor still can. When slots
+  are scarce, floors are honored in tier order, so an earlier tier is never
+  evicted by a later one. Summed floors must be `<= max_stories` (validated at
+  load). A series named in **no** tier has floor 0 — it competes only in the
+  buzz fill. If no `[[tier]]` is declared, selection defaults to a single
+  F1/IndyCar tier with floor 6.
 
 ### GDELT spike coverage
 
@@ -114,8 +129,9 @@ No code change is required:
 2. Optionally add a feed (`[[rss_feeds]]` or `[[subreddits]]`) with
    `series = "<id>"` to force-classify every entry from a dedicated source
    into that series, bypassing title matching for that source.
-3. If the new series should share in the guaranteed floor, add its `id` to
-   `core_series`.
+3. If the new series should share in a guaranteed floor, add its `id` to a
+   `[[tier]]` (or a new tier at the priority you want). Untiered series still
+   appear — they just compete on buzz alone with no reserved floor.
 
 ## Run
 

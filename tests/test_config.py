@@ -1,7 +1,7 @@
 import textwrap
 
 from digest.config import load_config
-from digest.models import SeriesDef
+from digest.models import SeriesDef, Tier
 
 
 def test_load_config_reads_toml_and_env(tmp_path, monkeypatch):
@@ -80,8 +80,10 @@ def test_load_config_parses_series_registry(tmp_path):
     cfg_file.write_text(
         textwrap.dedent("""
         max_stories = 15
-        core_series = ["f1", "wec"]
-        core_floor = 6
+
+        [[tier]]
+        series = ["f1", "wec"]
+        floor = 6
 
         [[series]]
         id = "f1"
@@ -96,37 +98,93 @@ def test_load_config_parses_series_registry(tmp_path):
     )
     cfg = load_config(str(cfg_file))
     assert cfg.max_stories == 15
-    assert cfg.core_series == ["f1", "wec"]
-    assert cfg.core_floor == 6
     assert [s.id for s in cfg.series] == ["f1", "wec"]
     assert cfg.series[0] == SeriesDef(id="f1", label="Formula 1", terms=("F1", "Grand Prix", "Verstappen"))
 
 
-def test_load_config_clamps_core_floor_to_max_stories(tmp_path):
+def test_load_config_parses_tiers_in_order(tmp_path):
     cfg_file = tmp_path / "config.toml"
     cfg_file.write_text(
         textwrap.dedent("""
-        max_stories = 3
-        core_floor = 10
-        core_series = ["f1"]
+        max_stories = 15
+
+        [[tier]]
+        series = ["f1", "indycar"]
+        floor = 6
+        [[tier]]
+        series = ["f2", "f3"]
+        floor = 3
 
         [[series]]
         id = "f1"
         label = "Formula 1"
         terms = ["F1"]
+        [[series]]
+        id = "indycar"
+        label = "IndyCar"
+        terms = ["IndyCar"]
+        [[series]]
+        id = "f2"
+        label = "Formula 2"
+        terms = ["Formula 2"]
+        [[series]]
+        id = "f3"
+        label = "Formula 3"
+        terms = ["Formula 3"]
     """)
     )
     cfg = load_config(str(cfg_file))
-    assert cfg.core_floor == 3  # clamped to max_stories
+    assert cfg.tiers == (
+        Tier(series=frozenset({"f1", "indycar"}), floor=6),
+        Tier(series=frozenset({"f2", "f3"}), floor=3),
+    )
 
 
-def test_load_config_rejects_unknown_core_series_id(tmp_path):
+def test_load_config_defaults_to_single_core_tier_when_none_declared(tmp_path):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text('max_stories = 15\n[ses]\nsender="a"\nrecipient="b"\naws_region="us-east-1"\n')
+    cfg = load_config(str(cfg_file))
+    assert cfg.tiers == (Tier(series=frozenset({"f1", "indycar"}), floor=6),)
+
+
+def test_load_config_rejects_tier_floors_exceeding_max_stories(tmp_path):
     import pytest
 
     cfg_file = tmp_path / "config.toml"
     cfg_file.write_text(
         textwrap.dedent("""
-        core_series = ["motogp"]
+        max_stories = 3
+
+        [[tier]]
+        series = ["f1"]
+        floor = 2
+        [[tier]]
+        series = ["f2"]
+        floor = 2
+
+        [[series]]
+        id = "f1"
+        label = "Formula 1"
+        terms = ["F1"]
+        [[series]]
+        id = "f2"
+        label = "Formula 2"
+        terms = ["Formula 2"]
+    """)
+    )
+    with pytest.raises(ValueError, match="sum to 4"):
+        load_config(str(cfg_file))
+
+
+def test_load_config_rejects_unknown_tier_series_id(tmp_path):
+    import pytest
+
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text(
+        textwrap.dedent("""
+        [[tier]]
+        series = ["motogp"]
+        floor = 2
 
         [[series]]
         id = "f1"
@@ -134,13 +192,15 @@ def test_load_config_rejects_unknown_core_series_id(tmp_path):
         terms = ["F1"]
     """)
     )
-    with pytest.raises(ValueError, match="core_series"):
+    with pytest.raises(ValueError, match="tier references unknown series"):
         load_config(str(cfg_file))
 
 
-def test_example_config_has_series_registry():
+def test_example_config_has_series_registry_and_tiers():
     cfg = load_config("config.example.toml")
     ids = {s.id for s in cfg.series}
-    assert {"f1", "indycar", "wec", "imsa", "nascar", "formulae"} <= ids
+    assert {"f1", "indycar", "f2", "f3", "f1academy", "indynxt", "wec", "imsa", "nascar", "formulae"} <= ids
     assert cfg.max_stories == 15
-    assert set(cfg.core_series) == {"f1", "indycar"}
+    # F1/IndyCar lead the tier order with the biggest floor.
+    assert cfg.tiers[0] == Tier(series=frozenset({"f1", "indycar"}), floor=6)
+    assert sum(t.floor for t in cfg.tiers) <= cfg.max_stories

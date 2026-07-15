@@ -1,5 +1,5 @@
 from digest.gate import filter_stories, select_digest
-from digest.models import ScoredStory, Story
+from digest.models import ScoredStory, Story, Tier
 
 
 def _scored(key, buzz):
@@ -59,60 +59,75 @@ def test_suppress_applies_even_during_calibration():
     assert out == []
 
 
-CORE = {"f1", "indycar"}
+T1 = Tier(series=frozenset({"f1", "indycar"}), floor=2)
 
 
-def test_select_reserves_floor_for_core_over_higher_buzz_others():
+def test_select_reserves_each_tier_floor_over_higher_buzz_untiered():
     survivors = [
-        _scored_series("o1", 0.9, "nascar"),
-        _scored_series("o2", 0.8, "wec"),
-        _scored_series("c1", 0.3, "f1"),
-        _scored_series("c2", 0.2, "indycar"),
+        _scored_series("u1", 0.9, "motogp"),  # untiered, highest buzz
+        _scored_series("u2", 0.85, "motogp"),
+        _scored_series("t1a", 0.3, "f1"),  # tier 1
+        _scored_series("t2a", 0.2, "f2"),  # tier 2
     ]
-    out = select_digest(survivors, max_stories=3, core_series=CORE, core_floor=2)
+    tiers = [Tier(frozenset({"f1", "indycar"}), 1), Tier(frozenset({"f2", "f3"}), 1)]
+    out = select_digest(survivors, max_stories=3, tiers=tiers)
     keys = [s.story.key for s in out]
     assert len(out) == 3
-    assert "c1" in keys and "c2" in keys  # floor honored despite low buzz
-    assert keys == ["o1", "c1", "c2"]  # sorted by buzz desc for display
+    assert "t1a" in keys and "t2a" in keys  # both tier floors honored despite low buzz
+    assert keys == ["u1", "t1a", "t2a"]  # sorted by buzz desc for display; u2 dropped
 
 
-def test_select_underfilled_floor_wastes_no_slot():
+def test_select_allocates_floors_in_tier_order_when_slots_scarce():
+    # Floors oversubscribe the cap (2+2 > 2). Earlier tiers win the slots;
+    # a later tier's higher-buzz floor story must not evict an earlier one.
     survivors = [
-        _scored_series("o1", 0.9, "nascar"),
-        _scored_series("o2", 0.8, "wec"),
-        _scored_series("c1", 0.5, "f1"),
-        _scored_series("o3", 0.4, "imsa"),
+        _scored_series("t1a", 0.4, "f1"),
+        _scored_series("t1b", 0.3, "f1"),
+        _scored_series("t2a", 0.9, "f2"),  # higher buzz but lower tier
     ]
-    out = select_digest(survivors, max_stories=3, core_series=CORE, core_floor=2)
-    assert [s.story.key for s in out] == ["o1", "o2", "c1"]  # only 1 core exists; fill by buzz
+    tiers = [Tier(frozenset({"f1"}), 2), Tier(frozenset({"f2"}), 2)]
+    out = select_digest(survivors, max_stories=2, tiers=tiers)
+    assert {s.story.key for s in out} == {"t1a", "t1b"}  # tier 1 claims both slots
 
 
-def test_select_high_buzz_core_may_exceed_floor():
+def test_select_untiered_series_gets_no_floor_only_buzz_fill():
     survivors = [
-        _scored_series("c1", 0.9, "f1"),
-        _scored_series("c2", 0.85, "indycar"),
-        _scored_series("c3", 0.8, "f1"),
-        _scored_series("o1", 0.7, "nascar"),
+        _scored_series("t1a", 0.9, "f1"),
+        _scored_series("u1", 0.5, "motogp"),
+        _scored_series("t1b", 0.1, "f1"),
     ]
-    out = select_digest(survivors, max_stories=3, core_series=CORE, core_floor=1)
-    assert [s.story.key for s in out] == ["c1", "c2", "c3"]  # floor is a minimum, not a cap
+    tiers = [Tier(frozenset({"f1"}), 1)]
+    out = select_digest(survivors, max_stories=2, tiers=tiers)
+    # floor takes t1a; remaining slot fills by buzz -> u1 beats t1b
+    assert [s.story.key for s in out] == ["t1a", "u1"]
+
+
+def test_select_underfilled_tier_floor_wastes_no_slot():
+    survivors = [
+        _scored_series("u1", 0.9, "nascar"),
+        _scored_series("u2", 0.8, "wec"),
+        _scored_series("t1", 0.5, "f1"),
+    ]
+    tiers = [Tier(frozenset({"f1", "indycar"}), 2)]  # floor 2, but only 1 tier story exists
+    out = select_digest(survivors, max_stories=3, tiers=tiers)
+    assert [s.story.key for s in out] == ["u1", "u2", "t1"]  # unused floor slot fills by buzz
+
+
+def test_select_high_buzz_tier_may_exceed_its_floor():
+    survivors = [
+        _scored_series("a", 0.9, "f1"),
+        _scored_series("b", 0.85, "f1"),
+        _scored_series("c", 0.8, "f1"),
+        _scored_series("u", 0.7, "nascar"),
+    ]
+    tiers = [Tier(frozenset({"f1"}), 1)]
+    out = select_digest(survivors, max_stories=3, tiers=tiers)
+    assert [s.story.key for s in out] == ["a", "b", "c"]  # floor is a minimum, not a cap
 
 
 def test_select_caps_at_max_stories():
-    # 20 candidates (exceeds max_stories=15), mixing core and non-core series.
-    # The 6 core stories (== core_floor) all sit inside indices 0-10, i.e.
-    # already within the top 15 by buzz — so the core floor and a pure
-    # buzz-ranked top-15 agree, making the expected result unambiguous: the
-    # top 15 by buzz, in buzz-descending order.
-    core_ids = {0, 2, 4, 6, 8, 10}
-    survivors = [
-        _scored_series(
-            f"s{i}",
-            1.0 - i / 100,
-            ("f1", "indycar")[i % 2] if i in core_ids else ("nascar", "wec", "imsa")[i % 3],
-        )
-        for i in range(20)
-    ]
-    out = select_digest(survivors, max_stories=15, core_series=CORE, core_floor=6)
+    survivors = [_scored_series(f"s{i}", 1.0 - i / 100, "f1") for i in range(20)]
+    tiers = [Tier(frozenset({"f1"}), 6)]
+    out = select_digest(survivors, max_stories=15, tiers=tiers)
     assert [s.story.key for s in out] == [f"s{i}" for i in range(15)]
     assert [s.buzz for s in out] == sorted((s.buzz for s in out), reverse=True)

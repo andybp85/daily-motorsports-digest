@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from digest.models import ScoredStory
+from digest.models import ScoredStory, Tier
 
 
 class SentHistory(Protocol):
@@ -26,18 +26,27 @@ def filter_stories(
     return survivors
 
 
-def select_digest(survivors: list[ScoredStory], *, max_stories: int, core_series: set[str], core_floor: int) -> list[ScoredStory]:
-    """Pick the day's stories: reserve a floor of core-series slots, fill by buzz.
+def select_digest(survivors: list[ScoredStory], *, max_stories: int, tiers: list[Tier]) -> list[ScoredStory]:
+    """Pick the day's stories: reserve each tier's floor in order, fill by buzz.
 
-    `survivors` is already sorted by buzz descending. The floor is a minimum,
-    not a cap — high-buzz core stories can occupy more than `core_floor` slots
-    because they also compete in the general fill.
+    `survivors` is already sorted by buzz descending. Floors are minimums, not
+    caps — a high-buzz tier can occupy more than its floor because its extra
+    stories also compete in the general fill. Floors are honored in tier order,
+    so when slots are scarce an earlier tier is never evicted by a later one.
     """
-    core = [s for s in survivors if s.story.series in core_series]
-    guaranteed = core[:core_floor]
-    guaranteed_ids = {id(s) for s in guaranteed}
-    pool = [s for s in survivors if id(s) not in guaranteed_ids]
-    fill = pool[: max(0, max_stories - len(guaranteed))]
-    chosen = guaranteed + fill
+    chosen: list[ScoredStory] = []
+    chosen_ids: set[int] = set()
+    for tier in tiers:
+        room = max_stories - len(chosen)
+        if room <= 0:
+            break
+        picks = [s for s in survivors if s.story.series in tier.series and id(s) not in chosen_ids][: min(tier.floor, room)]
+        chosen.extend(picks)
+        chosen_ids.update(id(s) for s in picks)
+
+    room = max_stories - len(chosen)
+    if room > 0:
+        chosen.extend([s for s in survivors if id(s) not in chosen_ids][:room])  # buzz-ordered fill
+
     chosen.sort(key=lambda s: s.buzz, reverse=True)
-    return chosen[:max_stories]
+    return chosen

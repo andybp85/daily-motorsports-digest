@@ -7,8 +7,23 @@ escalation_factor = 1.5
 db_path = "state.db"
 timezone = "America/New_York"
 max_stories = 15
-core_series = ["f1", "indycar"]   # guaranteed floor of slots for these
-core_floor = 6
+
+# Priority tiers: each reserves a floor of slots (a minimum, not a cap), applied
+# top-down, then remaining slots fill by buzz across everything. A series named
+# in no tier has floor 0 — it competes only in the buzz fill. Summed floors must
+# be <= max_stories. See "Series registry" below for the ids.
+[[tier]]                                              # 1st: the headline series
+series = ["f1", "indycar"]
+floor = 6
+[[tier]]                                              # 2nd: feeder ladders
+series = ["f2", "f3", "f1academy", "indynxt"]
+floor = 3
+[[tier]]                                              # 3rd
+series = ["wec", "formulae"]
+floor = 2
+[[tier]]                                              # 4th
+series = ["nascar", "imsa"]
+floor = 2
 
 # Reddit is an optional ranking signal. As of late 2025 Reddit gates new API
 # tokens behind manual approval (Responsible Builder Policy), so self-serve app
@@ -53,6 +68,31 @@ series = "f1"
 [[subreddits]]
 name = "IndyCar"
 series = "indycar"
+
+# Series registry — order is classification priority: a title matching two
+# series resolves to the earlier one. Feeder ladders are listed BEFORE their
+# parent so a specific hit wins — e.g. "F1 Academy" must classify as f1academy,
+# not f1 (whose "F1" term is a substring of it). See docs bean 98y5 on residual
+# term collisions (bare "F2"/"F3").
+[[series]]
+id = "f2"
+label = "Formula 2"
+terms = ["Formula 2", "FIA F2", "F2"]
+
+[[series]]
+id = "f3"
+label = "Formula 3"
+terms = ["Formula 3", "FIA F3", "F3"]
+
+[[series]]
+id = "f1academy"
+label = "F1 Academy"
+terms = ["F1 Academy"]
+
+[[series]]
+id = "indynxt"
+label = "Indy NXT"
+terms = ["Indy NXT", "Indy Lights"]
 
 [[series]]
 id = "f1"

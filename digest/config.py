@@ -2,7 +2,10 @@ import os
 import tomllib
 from dataclasses import dataclass, field
 
-from digest.models import SeriesDef
+from digest.models import SeriesDef, Tier
+
+_DEFAULT_TIER_SERIES = frozenset({"f1", "indycar"})
+_DEFAULT_TIER_FLOOR = 6
 
 
 @dataclass
@@ -23,8 +26,7 @@ class Config:
     rss_feeds: list = field(default_factory=list)
     subreddits: list = field(default_factory=list)
     series: tuple[SeriesDef, ...] = ()
-    core_series: list[str] = field(default_factory=lambda: ["f1", "indycar"])
-    core_floor: int = 6
+    tiers: tuple[Tier, ...] = (Tier(series=_DEFAULT_TIER_SERIES, floor=_DEFAULT_TIER_FLOOR),)
     # Secrets (from env)
     reddit_client_id: str = ""
     reddit_client_secret: str = ""
@@ -40,6 +42,23 @@ def _parse_series(raw: list[dict]) -> tuple[SeriesDef, ...]:
     return tuple(SeriesDef(id=b["id"], label=b["label"], terms=tuple(b["terms"])) for b in raw)
 
 
+def _parse_tiers(raw: list[dict], max_stories: int) -> tuple[Tier, ...]:
+    """Build the priority tiers from [[tier]] blocks; default to one core tier.
+
+    Floors are honored in order, so tier position encodes priority. The summed
+    floor must fit the cap — an oversubscribed config is a mistake, not a thing
+    to silently clamp, so it raises.
+    """
+    tiers = tuple(Tier(series=frozenset(t["series"]), floor=int(t["floor"])) for t in raw)
+    if not tiers:
+        tiers = (Tier(series=_DEFAULT_TIER_SERIES, floor=min(_DEFAULT_TIER_FLOOR, max_stories)),)
+
+    total = sum(t.floor for t in tiers)
+    if total > max_stories:
+        raise ValueError(f"tier floors sum to {total}, exceeding max_stories ({max_stories})")
+    return tiers
+
+
 def load_config(path: str | None = None) -> Config:
     """Load config from a TOML file (path or ./config.toml) plus secrets from env."""
     path = path or "config.toml"
@@ -47,17 +66,14 @@ def load_config(path: str | None = None) -> Config:
         data = tomllib.load(fh)
 
     series = _parse_series(data.get("series", []))
-    core_series = data.get("core_series", ["f1", "indycar"])
-    core_floor = int(data.get("core_floor", 6))
-
     max_stories = int(data.get("max_stories", 15))
-    core_floor = min(core_floor, max_stories)  # floor can't exceed the cap
+    tiers = _parse_tiers(data.get("tier", []), max_stories)
 
-    if series:  # validate only once populated
+    if series:  # validate tier membership only once the registry is populated
         known = {s.id for s in series}
-        unknown = [c for c in core_series if c not in known]
+        unknown = sorted({sid for tier in tiers for sid in tier.series if sid not in known})
         if unknown:
-            raise ValueError(f"core_series references unknown series id(s): {unknown}")
+            raise ValueError(f"tier references unknown series id(s): {unknown}")
 
     ses = data.get("ses", {})
     cfg = Config(
@@ -77,8 +93,7 @@ def load_config(path: str | None = None) -> Config:
         rss_feeds=data.get("rss_feeds", []),
         subreddits=data.get("subreddits", []),
         series=series,
-        core_series=core_series,
-        core_floor=core_floor,
+        tiers=tiers,
         reddit_client_id=os.environ.get("REDDIT_CLIENT_ID", ""),
         reddit_client_secret=os.environ.get("REDDIT_CLIENT_SECRET", ""),
         reddit_user_agent=os.environ.get("REDDIT_USER_AGENT", ""),

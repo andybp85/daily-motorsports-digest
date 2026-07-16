@@ -1,4 +1,5 @@
 import html as html_lib
+from urllib.parse import urlparse
 
 from digest.models import Blurb
 
@@ -14,6 +15,18 @@ def _story_link(blurb: Blurb) -> str:
     return url if url.startswith(_SAFE_SCHEMES) else "#"
 
 
+def _outlet_name(url: str) -> str:
+    """The linked outlet as a reader would say it: 'autosport.com'.
+
+    Read off the URL rather than the story's head RawItem.domain: the two agree
+    today only because cluster_items() takes canonical_url from the same item,
+    and a label that silently disagreed with the link it sits on would be worse
+    than no label. Falls back to 'source' when there's no host to name — an
+    unsafe URL is already downgraded to '#' upstream.
+    """
+    return urlparse(url).netloc.removeprefix("www.") or "source"
+
+
 def render_html(blurbs: list[Blurb], date) -> str:
     rows = []
     for n, blurb in enumerate(blurbs, start=1):
@@ -21,14 +34,16 @@ def render_html(blurbs: list[Blurb], date) -> str:
         title = html_lib.escape(s.story.title)
         text = html_lib.escape(blurb.text)
         link = html_lib.escape(_story_link(blurb))
+        outlet = html_lib.escape(_outlet_name(_story_link(blurb)))
         engagement = int(s.reddit_raw)
         outlets = int(s.breadth_raw)
+        plural = "" if outlets == 1 else "s"
         rows.append(
             f'<li style="margin-bottom:18px;">'
             f'<div style="font-weight:600;">{n}. {title}</div>'
             f'<div style="margin:4px 0;">{text}</div>'
             f'<div style="font-size:12px;color:#666;">'
-            f'<a href="{link}">source</a> · {engagement} upvotes+comments · {outlets} outlets'
+            f'<a href="{link}">{outlet}</a> · {engagement} upvotes+comments · {outlets} outlet{plural}'
             f'</div></li>'
         )
     body = "\n".join(rows)

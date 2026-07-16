@@ -29,6 +29,42 @@ def test_render_html_lists_blurbs_with_links_and_stats():
     assert "2 outlets" in html
 
 
+def test_render_html_names_the_linked_outlet():
+    blurbs = [_blurb("Verstappen wins", "Max takes it.", 10, 2, ["www.autosport.com"])]
+    html = render_html(blurbs, date(2026, 7, 3))
+    assert ">autosport.com</a>" in html  # named, and the www. is stripped
+    assert ">source</a>" not in html  # the old placeholder word is gone
+
+
+def test_render_html_falls_back_to_source_when_link_is_unusable():
+    """An unsafe URL is already downgraded to '#', which has no host to name.
+
+    The label must not come out blank — a bare '·' with nothing to click reads
+    as a rendering bug, so it degrades to the old placeholder word.
+    """
+    blurbs = [_blurb("Title", "Blurb text", 10, 2, ["a.com"])]
+    blurbs[0].scored.story.canonical_url = "javascript:alert(1)"
+    html = render_html(blurbs, date(2026, 7, 3))
+    assert '<a href="#">source</a>' in html
+
+
+def test_render_html_escapes_the_outlet_name():
+    blurbs = [_blurb("Title", "Blurb text", 10, 2, ["a.com"])]
+    blurbs[0].scored.story.canonical_url = 'https://evil"<script>.com/x'
+    html = render_html(blurbs, date(2026, 7, 3))
+    assert "<script>" not in html
+
+
+def test_render_html_pluralizes_the_outlet_count():
+    one = _blurb("Solo", "Only one outlet ran it.", 10, 2, ["a.com"])
+    html = render_html([one], date(2026, 7, 3))
+    assert "1 outlet" in html and "1 outlets" not in html
+
+    two = _blurb("Shared", "Two outlets ran it.", 10, 2, ["a.com", "b.com"])
+    html = render_html([two], date(2026, 7, 3))
+    assert "2 outlets" in html
+
+
 def test_send_email_calls_ses_with_expected_args():
     ses = MagicMock()
     send_email(ses, "d@example.com", "you@example.com", "Subject", "<p>hi</p>")

@@ -76,8 +76,16 @@ def build_keyword_list(registry: tuple[SeriesDef, ...], kind: str) -> list[str]:
     return []
 
 
-def parse_articles(rows: list[dict], registry: tuple[SeriesDef, ...], series: str = "") -> list[RawItem]:
-    """Convert GDELT article rows into relevant RawItems."""
+def parse_articles(rows: list[dict], registry: tuple[SeriesDef, ...]) -> list[RawItem]:
+    """Convert GDELT article rows into relevant RawItems.
+
+    `series` is deliberately left empty for normalize_items() to fill from the
+    title. The query that returned a row is not evidence of its series: the
+    indycar keywords pull in NASCAR (Penske runs cars in both) and F1 stories,
+    and classify_series() lets a source hint beat the title — right for a
+    curated feed, wrong for a keyword query — so labeling rows by query would
+    file those under indycar and hand them core_floor slots they didn't earn.
+    """
     items = []
     for row in rows:
         title = row.get("title", "")
@@ -89,7 +97,6 @@ def parse_articles(rows: list[dict], registry: tuple[SeriesDef, ...], series: st
                 url=row.get("url", ""),
                 title=title,
                 domain=row.get("domain", ""),
-                series=series,
             )
         )
     return items
@@ -169,7 +176,7 @@ def fetch_gdelt(
             )
             df = _search_with_retry(lambda: gd.article_search(filt), timeout=timeout)
             rows = df.to_dict("records") if df is not None and not df.empty else []
-            articles.extend(parse_articles(rows, registry, series=kind))
+            articles.extend(parse_articles(rows, registry))
 
             tl = _search_with_retry(lambda: gd.timeline_search("timelinevol", filt), timeout=timeout)
             vols = tl.iloc[:, -1].tolist() if tl is not None and not tl.empty else []

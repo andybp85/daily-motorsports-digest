@@ -45,7 +45,15 @@ def test_parse_articles_filters_irrelevant():
     assert items[0].source == "gdelt"
 
 
-def test_parse_articles_tags_series():
+def test_parse_articles_leaves_series_for_title_classification():
+    """A GDELT query label says which keyword set matched, not what a story is about.
+
+    The indycar keyword 'Penske' returns NASCAR stories, and the indycar query
+    also returns F1 ones. Stamping the query label on them would beat the title
+    in classify_series() (the source hint wins there, which is right for a
+    curated feed but a lie for a keyword query) and let them claim core_floor
+    slots. So GDELT leaves series empty and normalize_items decides by title.
+    """
     rows = [
         {
             "url": "https://a.com/1",
@@ -53,8 +61,26 @@ def test_parse_articles_tags_series():
             "domain": "a.com",
         }
     ]
-    items = parse_articles(rows, REGISTRY, series="f1")
-    assert items[0].series == "f1"
+    items = parse_articles(rows, REGISTRY)
+    assert items[0].series == ""
+
+
+def test_fetch_gdelt_does_not_label_by_query():
+    """An F1 story returned by the indycar query must not come back as indycar."""
+
+    class _Gdelt:
+        def article_search(self, *_args, **_kwargs):
+            import pandas as pd
+
+            return pd.DataFrame([{"url": "https://a.com/1", "title": "Verstappen wins the Grand Prix", "domain": "a.com"}])
+
+        def timeline_search(self, *_args, **_kwargs):
+            return None
+
+    since, end = datetime(2026, 7, 10), datetime(2026, 7, 11)
+    articles, _ = fetch_gdelt(REGISTRY, since, end, client=_Gdelt())
+
+    assert {a.series for a in articles} == {""}
 
 
 class _HangingGdelt:

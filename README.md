@@ -55,12 +55,12 @@ the registry *is* the relevance filter.
 id = "f1"
 label = "Formula 1"
 terms = ["Formula 1", "Formula One", "F1", "Grand Prix",
-         "Verstappen", "Hamilton", "Norris", "Red Bull Racing"]
+         "Verstappen", "Lewis Hamilton", "Lando Norris", "Red Bull Racing"]
 
 [[series]]
 id = "indycar"
 label = "IndyCar"
-terms = ["IndyCar", "Indy 500", "Palou", "Newgarden", "Penske", "Ganassi"]
+terms = ["IndyCar", "Indy 500", "Palou", "Newgarden", "Scott Dixon"]
 ```
 
 - **`id`** — lowercase slug, used internally (e.g. as a `[[tier]]` member or
@@ -71,6 +71,14 @@ terms = ["IndyCar", "Indy 500", "Palou", "Newgarden", "Penske", "Ganassi"]
   registry; otherwise it's dropped as irrelevant. **Registry order is match
   priority** — the first series whose term matches wins, so put more specific
   series before more general ones when a title could plausibly match both.
+
+**Terms must be unambiguous outside motorsport.** The `f1` and `indycar` terms
+are also the keywords sent to GDELT, which indexes general world news, and the
+relevance filter then re-checks that same list — so an ambiguous term is both
+what pulls a story in and what waves it through, and nothing downstream catches
+it. Bare `Hamilton` once filled a digest with Hamilton, Ontario city politics
+and Hamilton Insurance Group earnings. Name drivers in full (`Lewis Hamilton`),
+and avoid teams that run entries in several series (`Penske`, `Ganassi`).
 
 See `config.example.toml` for the full registry shipped by default: the F1
 feeder ladders (F2, F3, F1 Academy) and Indy NXT lead the list — listed

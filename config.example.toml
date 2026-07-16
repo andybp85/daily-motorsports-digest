@@ -97,15 +97,22 @@ terms = ["Indy NXT", "Indy Lights"]
 [[series]]
 id = "f1"
 label = "Formula 1"
+# Driver names are given in full. These terms are also the GDELT search keywords
+# (see build_keyword_list), and GDELT is general world news — a bare surname
+# queries for every Hamilton, Russell, Norris, Alonso and Leclerc on earth, and
+# is_relevant() can't filter them back out because it re-checks this same list.
 terms = ["Formula 1", "Formula One", "F1", "Grand Prix",
-         "Verstappen", "Hamilton", "Norris", "Leclerc", "Russell",
-         "Piastri", "Alonso", "Red Bull Racing", "Scuderia Ferrari"]
+         "Verstappen", "Piastri", "Lewis Hamilton", "Lando Norris",
+         "Charles Leclerc", "George Russell", "Fernando Alonso",
+         "Red Bull Racing", "Scuderia Ferrari"]
 
 [[series]]
 id = "indycar"
 label = "IndyCar"
+# Penske and Ganassi are deliberately absent: both field NASCAR and IMSA entries,
+# so as GDELT keywords they drag those series in (Blaney drives a Penske).
 terms = ["IndyCar", "Indy 500", "Indianapolis 500",
-         "Palou", "Newgarden", "Dixon", "Herta", "O'Ward", "Penske", "Ganassi"]
+         "Palou", "Newgarden", "Scott Dixon", "Herta", "O'Ward"]
 
 [[series]]
 id = "wec"

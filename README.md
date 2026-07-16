@@ -174,12 +174,7 @@ Override either:
 SERVICE_USER=digest SERVICE_DIR=/opt/digest sudo -E ./deploy/install.sh
 ```
 
-Inspect runs with:
-
-```bash
-systemctl status motorsports-digest.timer
-journalctl -u motorsports-digest.service -n 50
-```
+To inspect runs afterwards, see [Logs](#logs).
 
 ### API key-expiry reminders
 
@@ -203,6 +198,27 @@ changed and drops the stale state file. `key-expiry.state` is gitignored.
 
 ```bash
 .venv/bin/python -m pytest -v
+```
+
+## Logs
+
+The digest writes no log file. On the Pi it runs under systemd, so everything it
+prints goes to journald:
+
+```bash
+journalctl -u motorsports-digest.service -n 50          # last 50 lines
+journalctl -u motorsports-digest.service -f             # follow live
+journalctl -u motorsports-digest.service --since today  # today's run only
+systemctl status motorsports-digest.timer               # last/next run
+```
+
+Swap in `key-expiry-notify.service` for the API key-expiry reminder logs.
+
+Run it by hand instead and the same output goes straight to stdout — this is
+where the `[calibration]` score lines show up:
+
+```bash
+.venv/bin/python -m digest.main --dry-run
 ```
 
 ## Issue tracking (beans)

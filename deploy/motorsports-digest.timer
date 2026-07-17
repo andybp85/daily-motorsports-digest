@@ -2,7 +2,7 @@
 Description=Run the motorsports digest every morning
 
 [Timer]
-OnCalendar=*-*-* 06:00:00
+OnCalendar=*-*-* 05:00:00
 Persistent=true
 
 [Install]

@@ -20,6 +20,17 @@ def test_build_prompt_includes_titles_and_indices():
     assert "[0]" in prompt and "[1]" in prompt
 
 
+def test_build_prompt_labels_engagement_without_naming_reddit():
+    """The engagement signal is fed by whatever social collector is enabled
+    (Bluesky today, Reddit if its feed comes online), so the prompt must not
+    tell the model the number is 'Reddit' — that made it write about Reddit
+    engagement for a source that was switched off.
+    """
+    prompt = build_prompt([_scored("Verstappen wins")]).lower()
+    assert "reddit" not in prompt
+    assert "engagement" in prompt
+
+
 def test_parse_response_maps_json_back_to_stories():
     scored = [_scored("Verstappen wins"), _scored("Iowa preview")]
     text = json.dumps([

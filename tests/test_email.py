@@ -55,6 +55,22 @@ def test_render_html_escapes_the_outlet_name():
     assert "<script>" not in html
 
 
+def test_render_html_labels_engagement_source_neutrally():
+    """The engagement number is whatever social collector ran (Bluesky today),
+    not Reddit upvotes — the meta line must not call it 'upvotes+comments'.
+    """
+    blurbs = [_blurb("Verstappen wins", "Max takes it.", 10, 2, ["a.com", "b.com"])]
+    html = render_html(blurbs, date(2026, 7, 3))
+    assert "upvotes" not in html
+    assert "12 reactions" in html  # score + comments, source-neutral
+
+
+def test_render_html_pluralizes_the_reaction_count():
+    one = _blurb("Solo", "Barely shared.", 1, 0, ["a.com"])
+    html = render_html([one], date(2026, 7, 3))
+    assert "1 reaction" in html and "1 reactions" not in html
+
+
 def test_render_html_pluralizes_the_outlet_count():
     one = _blurb("Solo", "Only one outlet ran it.", 10, 2, ["a.com"])
     html = render_html([one], date(2026, 7, 3))

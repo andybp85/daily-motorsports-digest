@@ -35,15 +35,18 @@ def render_html(blurbs: list[Blurb], date) -> str:
         text = html_lib.escape(blurb.text)
         link = html_lib.escape(_story_link(blurb))
         outlet = html_lib.escape(_outlet_name(_story_link(blurb)))
-        engagement = int(s.reddit_raw)
+        # reddit_raw is the social-engagement signal, fed by whatever collector is
+        # enabled (Bluesky today); "reactions" stays honest if the source changes.
+        reactions = int(s.reddit_raw)
         outlets = int(s.breadth_raw)
-        plural = "" if outlets == 1 else "s"
+        reaction_s = "" if reactions == 1 else "s"
+        outlet_s = "" if outlets == 1 else "s"
         rows.append(
             f'<li style="margin-bottom:18px;">'
             f'<div style="font-weight:600;">{n}. {title}</div>'
             f'<div style="margin:4px 0;">{text}</div>'
             f'<div style="font-size:12px;color:#666;">'
-            f'<a href="{link}">{outlet}</a> · {engagement} upvotes+comments · {outlets} outlet{plural}'
+            f'<a href="{link}">{outlet}</a> · {reactions} reaction{reaction_s} · {outlets} outlet{outlet_s}'
             f'</div></li>'
         )
     body = "\n".join(rows)

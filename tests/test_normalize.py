@@ -7,6 +7,7 @@ from digest.normalize import (
 )
 
 REGISTRY = (
+    SeriesDef(id="f2", label="Formula 2", terms=("Formula 2", "FIA F2", "F2")),
     SeriesDef(
         id="f1",
         label="Formula 1",
@@ -44,6 +45,21 @@ def test_classify_series_from_title_terms():
 def test_classify_series_first_match_wins_in_registry_order():
     # A title that could hit two series resolves to the earlier (core) one.
     assert classify_series("Verstappen tests at Le Mans", "", REGISTRY) == "f1"
+
+
+def test_classify_series_matches_whole_token_not_substring():
+    # Regression (bean wqi3): the bare "F2" term must match the token F2, not the
+    # substring inside "F2A". A State Department Visa Bulletin story (categories
+    # are literally F1/F2A/F3) leaked into the digest labeled Formula 2 because
+    # "f2" is a substring of "f2a".
+    assert classify_series("State Department boosts August 2026 Visa Bulletin F2A cutoff", "", REGISTRY) == ""
+    assert classify_series("Formula 2 term should not match F20 or F2B either", "", REGISTRY) == "f2"  # "Formula 2" hit, not "F2"->F20
+    assert classify_series("Nothing but an F20 engine here", "", REGISTRY) == ""
+
+
+def test_classify_series_keeps_legit_bare_f2_headline():
+    # The token fix must not cost real feeder-series headlines that name only "F2".
+    assert classify_series("F2 sprint race delivers late drama at Spa", "", REGISTRY) == "f2"
 
 
 def test_normalize_items_sets_domain_and_series():

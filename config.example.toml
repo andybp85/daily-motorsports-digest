@@ -72,8 +72,10 @@ series = "indycar"
 # Series registry — order is classification priority: a title matching two
 # series resolves to the earlier one. Feeder ladders are listed BEFORE their
 # parent so a specific hit wins — e.g. "F1 Academy" must classify as f1academy,
-# not f1 (whose "F1" term is a substring of it). See docs bean 98y5 on residual
-# term collisions (bare "F2"/"F3").
+# not f1 (whose "F1" term also matches the "F1" token in it). Terms are matched
+# on whole-token (word) boundaries, so bare "F2"/"F3" no longer leak "F2A"/"F3B"
+# visa-category headlines (bean wqi3). See docs bean 98y5 on cross-series
+# collisions that word boundaries do NOT solve (a bare shared token like "GTP").
 [[series]]
 id = "f2"
 label = "Formula 2"

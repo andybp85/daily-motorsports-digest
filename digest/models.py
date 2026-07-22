@@ -8,7 +8,7 @@ class SeriesDef:
 
     id: str  # lowercase slug: "f1", "wec", ...
     label: str  # display name: "Formula 1", "WEC"
-    terms: tuple[str, ...]  # distinctive identifiers; substring-matched
+    terms: tuple[str, ...]  # distinctive identifiers; whole-token (word-boundary) matched
 
 
 @dataclass(frozen=True)

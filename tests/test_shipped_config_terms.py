@@ -33,6 +33,9 @@ NON_MOTORSPORT_HEADLINES = (
     "Xabi Alonso dispensa 160 milhoes e promete nao ficar por aqui",
     "Alonso wants Fernandez stay - Ghanaian Times",
     "Drome. Philippe Leclerc, specialiste de la restauration de voitures anciennes et rares",
+    # 2026-07-22 leak: US visa-preference categories are literally F1/F2A/F2B/F3,
+    # so the bare "F2" term substring-matched "F2A" and this shipped labeled f2.
+    "State Department boosts August 2026 Visa Bulletin F2A cutoff",
 )
 
 # Headlines the digest exists to deliver — anchoring terms must not cost us these.

@@ -1,9 +1,23 @@
+import re
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from digest.models import RawItem, SeriesDef
 
 _TRACKING_PREFIXES = ("utm_",)
 _TRACKING_KEYS = {"fbclid", "gclid", "mc_cid", "mc_eid", "ref", "cmpid"}
+
+
+def _term_in_title(term: str, title_low: str) -> bool:
+    r"""Whole-token match: 'f2' matches the token F2, not the substring in 'f2a'.
+
+    Naive substring matching leaked non-motorsport stories — US visa-preference
+    categories are literally F1/F2A/F2B/F3, so the bare 'F2' term matched
+    'F2A' (bean wqi3). \b anchors both ends to a word boundary, so a term only
+    matches a standalone token. Every registry term starts and ends with a word
+    character (letter/digit), which is what \b requires. re.escape keeps a term's
+    punctuation (O'Ward, E-Prix) literal.
+    """
+    return re.search(rf"\b{re.escape(term)}\b", title_low) is not None
 
 
 def canonicalize_url(url: str) -> str:
@@ -44,7 +58,7 @@ def classify_series(title: str, source_series: str, registry: tuple[SeriesDef, .
         return source_series
     low = title.lower()
     for series in registry:
-        if any(term.lower() in low for term in series.terms):
+        if any(_term_in_title(term.lower(), low) for term in series.terms):
             return series.id
     return ""
 
